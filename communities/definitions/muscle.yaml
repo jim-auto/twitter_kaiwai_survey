@@ -1,0 +1,27 @@
+id: muscle
+name: 筋トレ界隈
+description: "筋トレ・フィットネス・ボディメイク系コミュニティ"
+
+seeds: []
+
+hashtags:
+  - "#筋トレ"
+  - "#ボディメイク"
+  - "#フィジーク"
+  - "#ベンチプレス"
+
+keywords:
+  - "筋トレ バルクアップ"
+  - "フィジーク 大会"
+  - "ベンチプレス MAX"
+
+bio_patterns:
+  - "(筋トレ|フィットネス|ボディメイク|フィジーク|パワーリフ|ベンチプレス|デッドリフト|スクワット)"
+
+exclude_patterns:
+  - "(公式|企業|ニュース|PR|広告|サプリ販売)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

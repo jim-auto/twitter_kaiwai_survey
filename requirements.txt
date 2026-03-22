@@ -1,0 +1,9 @@
+requests>=2.31
+python-dotenv>=1.0
+sqlalchemy>=2.0
+pyyaml>=6.0
+matplotlib>=3.7
+seaborn>=0.13
+networkx>=3.0
+pyvis>=0.3
+click>=8.0

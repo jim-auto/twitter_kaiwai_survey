@@ -1,0 +1,26 @@
+id: startup
+name: 起業・スタートアップ界隈
+description: "起業家、スタートアップ創業者、VC関連のコミュニティ"
+
+seeds: []
+
+hashtags:
+  - "#起業"
+  - "#スタートアップ"
+  - "#SaaS"
+
+keywords:
+  - "起業 資金調達"
+  - "スタートアップ シード"
+  - "Series A 調達"
+
+bio_patterns:
+  - "(起業|CEO|CTO|創業者|スタートアップ|ファウンダー|founder|代表取締役)"
+
+exclude_patterns:
+  - "(公式|ニュース|メディア|求人)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

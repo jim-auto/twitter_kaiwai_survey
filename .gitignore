@@ -1,0 +1,7 @@
+.env
+data/cookies/
+data/exports/
+data/*.db
+__pycache__/
+*.pyc
+.venv/

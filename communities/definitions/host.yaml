@@ -1,0 +1,26 @@
+id: host
+name: ホスト界隈
+description: "ホストクラブ、ホスト文化関連のコミュニティ"
+
+seeds: []
+
+hashtags:
+  - "#ホスト"
+  - "#歌舞伎町"
+  - "#ホストクラブ"
+
+keywords:
+  - "ホスト 指名"
+  - "歌舞伎町 ホスト"
+  - "ナンバーワン ホスト"
+
+bio_patterns:
+  - "(ホスト|歌舞伎町|ミナミ|すすきの|指名|ナンバー入り)"
+
+exclude_patterns:
+  - "(公式|求人|企業|ニュース|ホストファミリー)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

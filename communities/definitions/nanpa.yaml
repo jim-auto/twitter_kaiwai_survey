@@ -1,0 +1,29 @@
+id: nanpa
+name: ナンパ界隈
+description: "ストリートナンパ、クラブナンパ、ネトナン等のPUA系コミュニティ"
+
+seeds:
+  - username: ring_040304
+    role: influencer
+
+hashtags:
+  - "#ナンパ"
+  - "#ストナン"
+  - "#ネトナン"
+  - "#即日"
+
+keywords:
+  - "ナンパ 即"
+  - "ストリートナンパ"
+  - "声かけ 連れ出し"
+
+bio_patterns:
+  - "(ナンパ|即数|斬り|pua|ストナン|ネトナン|即日|連れ出し)"
+
+exclude_patterns:
+  - "(公式|企業|ニュース|news|official|防犯|警察)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

@@ -1,0 +1,27 @@
+id: fx_traders
+name: FX・投資界隈
+description: "FXトレーダー、株式投資、仮想通貨投資のコミュニティ"
+
+seeds: []
+
+hashtags:
+  - "#FX"
+  - "#トレーダー"
+  - "#デイトレ"
+  - "#仮想通貨"
+
+keywords:
+  - "FX トレード 収支"
+  - "デイトレ 利確"
+  - "億トレ"
+
+bio_patterns:
+  - "(FX|トレーダー|デイトレ|スキャル|スイング|仮想通貨|億トレ|専業トレーダー)"
+
+exclude_patterns:
+  - "(公式|企業|ニュース|自動売買|EA販売|コンサル募集)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

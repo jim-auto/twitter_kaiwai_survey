@@ -1,0 +1,37 @@
+# 界隈定義テンプレート
+# このファイルをコピーして新しい界隈を定義してください
+
+id: template                     # ユニークID（英数字）
+name: テンプレート界隈             # 日本語名
+description: "界隈の説明"
+
+# シードアカウント（界隈の中心人物）
+seeds:
+  - username: example_user1
+    role: influencer              # influencer | active | media
+  - username: example_user2
+    role: active
+
+# 検索用ハッシュタグ
+hashtags:
+  - "#タグ1"
+  - "#タグ2"
+
+# 検索用キーワード（OR結合）
+keywords:
+  - "キーワード1"
+  - "キーワード2 キーワード3"
+
+# bioマッチパターン（正規表現）
+bio_patterns:
+  - "(パターン1|パターン2)"
+
+# 除外パターン（企業アカウント等）
+exclude_patterns:
+  - "(公式|企業|ニュース|news|official)"
+
+# 拡張パラメータ
+expansion:
+  max_depth: 2                   # シードからのホップ数
+  min_shared_follows: 3          # 最低共通フォロー数
+  max_members: 5000              # メンバー上限
