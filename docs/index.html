@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitter 界隈マップ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    h1 { text-align: center; margin: 30px 0 10px; font-size: 2em; }
+    h1 span { color: #1d9bf0; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.95em; }
+
+    /* Stats */
+    .stats { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1; min-width: 140px;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 16px; text-align: center;
+    }
+    .stat-card .value { font-size: 1.8em; font-weight: bold; color: #ff6b6b; }
+    .stat-card .label { font-size: 0.85em; color: #888; margin-top: 4px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab {
+      padding: 8px 16px; border-radius: 8px;
+      background: #1a1a1a; border: 1px solid #333;
+      color: #ccc; cursor: pointer; font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    .tab:hover { background: #252525; }
+    .tab.active { background: #ff6b6b; color: #fff; border-color: #ff6b6b; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #1a1a1a; padding: 10px 12px; text-align: left;
+      font-size: 0.85em; color: #888; border-bottom: 2px solid #333;
+      position: sticky; top: 0;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid #1e1e1e; }
+    tr:hover td { background: #1a1a1a; }
+
+    .rank { width: 50px; text-align: center; font-weight: bold; }
+    .community-name { font-weight: bold; font-size: 1.05em; }
+    .community-desc { color: #888; font-size: 0.85em; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .num-highlight { color: #ff6b6b; font-weight: bold; }
+    .num-blue { color: #1d9bf0; }
+
+    /* Badges */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75em; font-weight: 600;
+    }
+    .badge-large { color: #4ade80; background: rgba(74,222,128,0.15); }
+    .badge-medium { color: #fbbf24; background: rgba(251,191,36,0.15); }
+    .badge-small { color: #60a5fa; background: rgba(96,165,250,0.15); }
+
+    /* Overlap Matrix */
+    .matrix-container { overflow-x: auto; margin: 20px 0; }
+    .matrix { border-collapse: collapse; }
+    .matrix th, .matrix td {
+      padding: 8px 12px; text-align: center; font-size: 0.85em;
+      min-width: 80px; border: 1px solid #2a2a2a;
+    }
+    .matrix th { background: #1a1a1a; }
+    .matrix td.self { background: #1a1a1a; color: #555; }
+
+    /* Heatmap cell coloring via inline style */
+    .heat-0 { background: #1a1a1a; }
+    .heat-1 { background: rgba(255,107,107,0.15); }
+    .heat-2 { background: rgba(255,107,107,0.3); }
+    .heat-3 { background: rgba(255,107,107,0.45); }
+    .heat-4 { background: rgba(255,107,107,0.6); }
+    .heat-5 { background: rgba(255,107,107,0.8); color: #fff; }
+
+    /* Bar chart */
+    .bar-row { display: flex; align-items: center; margin: 8px 0; }
+    .bar-label { width: 160px; text-align: right; padding-right: 12px; font-size: 0.9em; }
+    .bar-track { flex: 1; height: 28px; background: #1a1a1a; border-radius: 6px; overflow: hidden; }
+    .bar-fill {
+      height: 100%; border-radius: 6px; display: flex; align-items: center;
+      padding-left: 10px; font-size: 0.8em; font-weight: 600; color: #fff;
+      transition: width 0.5s ease;
+    }
+    .bar-fill-red { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
+    .bar-fill-blue { background: linear-gradient(90deg, #1d9bf0, #1a8cd8); }
+    .bar-fill-green { background: linear-gradient(90deg, #4ade80, #22c55e); }
+    .bar-fill-purple { background: linear-gradient(90deg, #c084fc, #a855f7); }
+    .bar-fill-yellow { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+
+    /* Influencer list */
+    .influencer { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1e1e1e; }
+    .influencer .avatar { width: 36px; height: 36px; border-radius: 50%; }
+    .influencer .info { flex: 1; }
+    .influencer .name { font-weight: bold; font-size: 0.95em; }
+    .influencer .name a { color: #1d9bf0; text-decoration: none; }
+    .influencer .name a:hover { text-decoration: underline; }
+    .influencer .bio { color: #888; font-size: 0.8em; }
+    .influencer .followers { color: #1d9bf0; font-size: 0.85em; }
+
+    /* Status banner */
+    .status-banner {
+      text-align: center; padding: 40px 20px; color: #666;
+      font-size: 1.1em;
+    }
+    .status-banner .icon { font-size: 3em; margin-bottom: 12px; }
+
+    .disclaimer { margin-top: 40px; padding: 16px; background: #1a1a1a; border-radius: 8px; color: #666; font-size: 0.85em; }
+    footer { text-align: center; color: #444; padding: 20px; font-size: 0.8em; }
+
+    @media (max-width: 600px) {
+      .stats { flex-direction: column; }
+      .stat-card .value { font-size: 1.4em; }
+      .tab { padding: 6px 10px; font-size: 0.8em; }
+      .bar-label { width: 100px; font-size: 0.8em; }
+      .matrix th, .matrix td { padding: 4px 6px; font-size: 0.75em; min-width: 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1><span>Twitter</span> 界隈マップ</h1>
+  <p class="subtitle">日本のTwitter界隈の規模と重複を可視化</p>
+
+  <!-- Stats -->
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="value" id="stat-communities">-</div><div class="label">調査界隈数</div></div>
+    <div class="stat-card"><div class="value" id="stat-total-members">-</div><div class="label">総メンバー数</div></div>
+    <div class="stat-card"><div class="value" id="stat-total-reach">-</div><div class="label">総リーチ</div></div>
+    <div class="stat-card"><div class="value" id="stat-max-overlap">-</div><div class="label">最大重複度</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('size')">界隈規模</div>
+    <div class="tab" onclick="switchTab('overlap')">重複マトリクス</div>
+    <div class="tab" onclick="switchTab('chart')">規模チャート</div>
+    <div class="tab" onclick="switchTab('influencers')">インフルエンサー</div>
+    <div class="tab" onclick="switchTab('details')">重複詳細</div>
+  </div>
+
+  <!-- Tab: 界隈規模 -->
+  <div class="tab-content active" id="tab-size">
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th>界隈</th>
+          <th class="num">メンバー</th>
+          <th class="num">アクティブ</th>
+          <th class="num">総リーチ</th>
+          <th class="num">中央値FL</th>
+          <th class="num">インフルエンサー</th>
+        </tr>
+      </thead>
+      <tbody id="size-table"></tbody>
+    </table>
+  </div>
+
+  <!-- Tab: 重複マトリクス -->
+  <div class="tab-content" id="tab-overlap">
+    <p style="color:#888;margin-bottom:12px;">Jaccard類似度（0=重複なし、1=完全一致）</p>
+    <div class="matrix-container">
+      <table class="matrix" id="overlap-matrix"></table>
+    </div>
+  </div>
+
+  <!-- Tab: 規模チャート -->
+  <div class="tab-content" id="tab-chart">
+    <h3 style="margin-bottom:16px;">界隈規模ランキング</h3>
+    <div id="size-chart"></div>
+  </div>
+
+  <!-- Tab: インフルエンサー -->
+  <div class="tab-content" id="tab-influencers">
+    <div id="influencer-list"></div>
+  </div>
+
+  <!-- Tab: 重複詳細 -->
+  <div class="tab-content" id="tab-details">
+    <table>
+      <thead>
+        <tr>
+          <th>界隈A</th>
+          <th>界隈B</th>
+          <th class="num">共通</th>
+          <th class="num">Jaccard</th>
+          <th class="num">A→B</th>
+          <th class="num">B→A</th>
+        </tr>
+      </thead>
+      <tbody id="overlap-table"></tbody>
+    </table>
+  </div>
+
+  <!-- No data state -->
+  <div class="status-banner" id="no-data" style="display:none;">
+    <div class="icon">📊</div>
+    <p>データがまだありません。</p>
+    <p style="font-size:0.85em;margin-top:8px;">
+      <code>python main.py run-all</code> を実行してデータを収集してください。<br>
+      収集後、<code>python generate_pages.py</code> でこのページを更新できます。
+    </p>
+  </div>
+
+  <div class="disclaimer">
+    ※ データはTwitter(X)のプロフィール・フォローグラフから自動収集したものです。
+    界隈の境界は厳密なものではなく、シードアカウントとキーワードに基づく推定です。
+  </div>
+
+  <footer>
+    Data collected from X (Twitter) profiles and follow graphs. Built with Python.
+  </footer>
+</div>
+
+<script>
+// --- Data (populated by generate_pages.py) ---
+const REPORT_DATA = null;  // Will be replaced with actual JSON data
+
+// --- Rendering ---
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function heatClass(val) {
+  if (val >= 0.4) return 'heat-5';
+  if (val >= 0.2) return 'heat-4';
+  if (val >= 0.1) return 'heat-3';
+  if (val >= 0.05) return 'heat-2';
+  if (val > 0) return 'heat-1';
+  return 'heat-0';
+}
+
+const BAR_COLORS = ['bar-fill-red','bar-fill-blue','bar-fill-green','bar-fill-purple','bar-fill-yellow'];
+
+function render(data) {
+  if (!data || !data.communities || data.communities.length === 0) {
+    document.getElementById('no-data').style.display = 'block';
+    return;
+  }
+
+  const communities = data.communities;
+  const overlaps = data.overlaps || [];
+  const matrix = data.overlap_matrix || {};
+
+  // Stats
+  const totalMembers = communities.reduce((s, c) => s + c.member_count, 0);
+  const totalReach = communities.reduce((s, c) => s + c.total_followers_reach, 0);
+  const maxJaccard = overlaps.length > 0 ? Math.max(...overlaps.map(o => o.jaccard)) : 0;
+
+  document.getElementById('stat-communities').textContent = communities.length;
+  document.getElementById('stat-total-members').textContent = formatNum(totalMembers);
+  document.getElementById('stat-total-reach').textContent = formatNum(totalReach);
+  document.getElementById('stat-max-overlap').textContent = maxJaccard.toFixed(3);
+
+  // Size table
+  const sizeBody = document.getElementById('size-table');
+  communities.forEach((c, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+    const sizeBadge = c.member_count >= 1000 ? 'badge-large' :
+                      c.member_count >= 300 ? 'badge-medium' : 'badge-small';
+    sizeBody.innerHTML += `<tr>
+      <td class="rank">${medal}</td>
+      <td><div class="community-name">${c.community_name}</div>
+          <div class="community-desc">${c.community_id}</div></td>
+      <td class="num num-highlight">${c.member_count.toLocaleString()}</td>
+      <td class="num">${c.active_member_count.toLocaleString()}</td>
+      <td class="num num-blue">${formatNum(c.total_followers_reach)}</td>
+      <td class="num">${formatNum(c.median_followers)}</td>
+      <td class="num">${c.influencer_count}</td>
+    </tr>`;
+  });
+
+  // Overlap matrix
+  if (matrix.community_ids && matrix.community_ids.length > 1) {
+    const ids = matrix.community_ids;
+    const nameMap = {};
+    communities.forEach(c => { nameMap[c.community_id] = c.community_name; });
+
+    let html = '<thead><tr><th></th>';
+    ids.forEach(id => { html += `<th>${nameMap[id] || id}</th>`; });
+    html += '</tr></thead><tbody>';
+    ids.forEach((rowId, i) => {
+      html += `<tr><th>${nameMap[rowId] || rowId}</th>`;
+      ids.forEach((colId, j) => {
+        const val = matrix.matrix[i][j];
+        if (i === j) {
+          html += '<td class="self">-</td>';
+        } else {
+          html += `<td class="${heatClass(val)}">${val.toFixed(3)}</td>`;
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody>';
+    document.getElementById('overlap-matrix').innerHTML = html;
+  }
+
+  // Size chart (bar chart)
+  const maxCount = Math.max(...communities.map(c => c.member_count));
+  const chartDiv = document.getElementById('size-chart');
+  communities.forEach((c, i) => {
+    const pct = (c.member_count / maxCount * 100).toFixed(1);
+    const color = BAR_COLORS[i % BAR_COLORS.length];
+    chartDiv.innerHTML += `<div class="bar-row">
+      <div class="bar-label">${c.community_name}</div>
+      <div class="bar-track">
+        <div class="bar-fill ${color}" style="width:${pct}%">${c.member_count.toLocaleString()}</div>
+      </div>
+    </div>`;
+  });
+
+  // Influencers
+  const infDiv = document.getElementById('influencer-list');
+  communities.forEach(c => {
+    if (!c.top_influencers || c.top_influencers.length === 0) return;
+    infDiv.innerHTML += `<h3 style="margin:20px 0 10px;color:#ff6b6b;">${c.community_name}</h3>`;
+    c.top_influencers.slice(0, 5).forEach(inf => {
+      infDiv.innerHTML += `<div class="influencer">
+        <div class="info">
+          <div class="name"><a href="https://x.com/${inf.screen_name}" target="_blank">@${inf.screen_name}</a>
+            ${inf.display_name ? ' — ' + inf.display_name : ''}</div>
+          <div class="bio">${inf.bio || ''}</div>
+        </div>
+        <div class="followers">${formatNum(inf.followers_count)} FL</div>
+      </div>`;
+    });
+  });
+
+  // Overlap details
+  const overlapBody = document.getElementById('overlap-table');
+  const nameMap2 = {};
+  communities.forEach(c => { nameMap2[c.community_id] = c.community_name; });
+  overlaps.forEach(o => {
+    overlapBody.innerHTML += `<tr>
+      <td>${nameMap2[o.community_a] || o.community_a}</td>
+      <td>${nameMap2[o.community_b] || o.community_b}</td>
+      <td class="num num-highlight">${o.intersection_count.toLocaleString()}</td>
+      <td class="num">${o.jaccard.toFixed(3)}</td>
+      <td class="num">${(o.containment_a_in_b * 100).toFixed(1)}%</td>
+      <td class="num">${(o.containment_b_in_a * 100).toFixed(1)}%</td>
+    </tr>`;
+  });
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Init
+if (REPORT_DATA) {
+  render(REPORT_DATA);
+} else {
+  document.getElementById('no-data').style.display = 'block';
+}
+</script>
+
+</body>
+</html>

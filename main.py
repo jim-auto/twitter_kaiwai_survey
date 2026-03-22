@@ -98,6 +98,14 @@ def visualize(confidence):
 
 
 @cli.command()
+@click.option("--confidence", "-c", default=0.5, help="最低confidence閾値")
+def pages(confidence):
+    """GitHub Pages (docs/index.html) を更新"""
+    from generate_pages import generate_pages
+    generate_pages(min_confidence=confidence)
+
+
+@cli.command()
 @click.argument("community_id", required=False)
 def run_all(community_id):
     """全パイプラインを実行（discover → follows → profiles → analyze）"""
