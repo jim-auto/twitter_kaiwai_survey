@@ -1,0 +1,41 @@
+id: photo
+name: 写真・カメラ界隈
+description: "写真家、カメラ愛好家、フォトグラファーのコミュニティ"
+
+seeds:
+  - username: ninagawamika
+    role: influencer
+  - username: tanaka_tatsuya
+    role: influencer
+  - username: x51
+    role: active
+  - username: nagi_yoshida
+    role: active
+  - username: railman_nakai
+    role: active
+  - username: _tuck4
+    role: active
+  - username: TakahiroBessho
+    role: active
+
+hashtags:
+  - "#写真"
+  - "#カメラ"
+  - "#ファインダー越しの私の世界"
+  - "#写真好きな人と繋がりたい"
+
+keywords:
+  - "写真家 作品"
+  - "カメラ レンズ"
+  - "フォトグラファー"
+
+bio_patterns:
+  - "(写真家|フォトグラファー|カメラマン|photographer|カメラ|撮影)"
+
+exclude_patterns:
+  - "(カメラ販売|PR|広告)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

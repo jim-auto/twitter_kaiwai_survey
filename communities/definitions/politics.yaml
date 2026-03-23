@@ -1,0 +1,38 @@
+id: politics
+name: 政治界隈
+description: "政治家、政治評論家、ジャーナリストのコミュニティ"
+
+seeds:
+  - username: konotarogomame
+    role: influencer
+  - username: hiroyoshimura
+    role: influencer
+  - username: hashimoto_lo
+    role: influencer
+  - username: inosenaoki
+    role: active
+  - username: namatahara
+    role: active
+  - username: tsuda
+    role: active
+
+hashtags:
+  - "#政治"
+  - "#国会"
+  - "#選挙"
+
+keywords:
+  - "政治 改革"
+  - "国会 議論"
+  - "選挙 候補"
+
+bio_patterns:
+  - "(政治家|議員|国会|知事|市長|ジャーナリスト|評論家|記者)"
+
+exclude_patterns:
+  - "(ボット|まとめ)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

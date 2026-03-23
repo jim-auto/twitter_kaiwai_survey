@@ -12,7 +12,12 @@
       "Bash(gh api:*)",
       "Bash(ls -la /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/.twitter_cookies*.json)",
       "Bash(set PYTHONIOENCODING=utf-8)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:scrapfly.io)",
+      "WebFetch(domain:x.com)",
+      "Bash(ls /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/*.json)"
     ]
   }
 }

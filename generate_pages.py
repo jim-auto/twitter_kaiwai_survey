@@ -1,5 +1,6 @@
 """分析結果をGitHub Pages (docs/index.html) に埋め込む"""
 import json
+import re
 import sys
 from dataclasses import asdict
 from pathlib import Path
@@ -34,16 +35,23 @@ def generate_pages(min_confidence: float = 0.5):
     html_path = docs_dir / "index.html"
 
     html = html_path.read_text(encoding="utf-8")
-    html = html.replace(
-        "const REPORT_DATA = null;",
-        f"const REPORT_DATA = {json_str};",
+    # Replace REPORT_DATA whether it's null or already has data
+    html = re.sub(
+        r"const REPORT_DATA = .+?;\s*\n",
+        f"const REPORT_DATA = {json_str};\n",
+        html,
+        count=1,
+        flags=re.DOTALL,
     )
     html_path.write_text(html, encoding="utf-8")
 
-    print(f"[OK] docs/index.html を更新しました")
-    print(f"  界隈数: {len(sizes)}")
-    print(f"  総メンバー: {sum(s.member_count for s in sizes):,}")
-    print(f"  重複ペア: {len(overlaps)}")
+    print(f"[OK] docs/index.html updated")
+    print(f"  Communities: {len(sizes)}")
+    print(f"  Total members: {sum(s.member_count for s in sizes):,}")
+    print(f"  Overlap pairs: {len(overlaps)}")
+    for o in overlaps[:5]:
+        if o.jaccard > 0:
+            print(f"    {o.community_a} x {o.community_b}: Jaccard={o.jaccard:.3f} ({o.intersection_count} shared)")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,36 @@
+id: education
+name: 教育界隈
+description: "教育者、教育インフルエンサー、EdTech関連のコミュニティ"
+
+seeds:
+  - username: _HappyBoy
+    role: influencer
+  - username: saruesteacher
+    role: influencer
+  - username: ittokutomano
+    role: active
+  - username: daijapan
+    role: active
+  - username: kyoiku_shimbun
+    role: media
+
+hashtags:
+  - "#教育"
+  - "#先生"
+  - "#EdTech"
+
+keywords:
+  - "教育 改革"
+  - "先生 働き方"
+  - "学校 教育"
+
+bio_patterns:
+  - "(教育|先生|教員|教師|学校|塾|EdTech|教育学)"
+
+exclude_patterns:
+  - "(塾の広告|PR)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

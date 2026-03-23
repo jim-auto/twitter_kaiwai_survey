@@ -1,0 +1,42 @@
+id: anime
+name: アニメ・漫画界隈
+description: "アニメファン、漫画家、声優のコミュニティ"
+
+seeds:
+  - username: hanae0626
+    role: influencer
+  - username: sugitaLOV
+    role: influencer
+  - username: nakamuraFF11
+    role: influencer
+  - username: ono_kensho
+    role: active
+  - username: Ayana_take
+    role: active
+  - username: Un4v5s8bgsVk9Xp
+    role: influencer
+  - username: horikoshiko
+    role: active
+  - username: NEBU_KURO
+    role: active
+
+hashtags:
+  - "#アニメ"
+  - "#漫画"
+  - "#声優"
+
+keywords:
+  - "アニメ 新作"
+  - "漫画家 連載"
+  - "声優 イベント"
+
+bio_patterns:
+  - "(アニメ|漫画|声優|イラストレーター|漫画家|アニメーター|オタク)"
+
+exclude_patterns:
+  - "(公式ニュース|アフィリエイト)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

@@ -1,0 +1,41 @@
+id: gaming
+name: ゲーム界隈
+description: "プロゲーマー、ゲーム実況、eスポーツのコミュニティ"
+
+seeds:
+  - username: daigothebeastJP
+    role: influencer
+  - username: tokidoki77
+    role: influencer
+  - username: unkochan1234567
+    role: influencer
+  - username: avashaka
+    role: influencer
+  - username: stylishnoob
+    role: active
+  - username: VodkaChaso
+    role: active
+  - username: Ras9915
+    role: active
+
+hashtags:
+  - "#ゲーム実況"
+  - "#eスポーツ"
+  - "#ApexLegends"
+  - "#ストリーマー"
+
+keywords:
+  - "ゲーム実況 配信"
+  - "プロゲーマー 大会"
+  - "eスポーツ チーム"
+
+bio_patterns:
+  - "(ゲーム実況|プロゲーマー|ストリーマー|eスポーツ|配信者|Apex|Valorant|FPS)"
+
+exclude_patterns:
+  - "(公式ニュース|ゲームメディア)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000
