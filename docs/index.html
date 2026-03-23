@@ -228,7 +228,504 @@
 
 <script>
 // --- Data (populated by generate_pages.py) ---
-const REPORT_DATA = null;  // Will be replaced with actual JSON data
+const REPORT_DATA = {
+  "min_confidence": 0.3,
+  "communities": [
+    {
+      "community_id": "muscle",
+      "community_name": "筋トレ界隈",
+      "member_count": 57,
+      "active_member_count": 44,
+      "total_followers_reach": 1037016,
+      "median_followers": 1887,
+      "influencer_count": 21,
+      "top_influencers": [
+        {
+          "screen_name": "Naasuke_fit",
+          "display_name": "Naasuke_fit",
+          "followers_count": 148819,
+          "bio": "🏁筋トレが大好き28歳社会人 🍔ハンバーガーが大好き🍔🔥ノーストレス減量で好きなようにボディメイク🔥 【https://t.co/WHBrRTV4NQ】"
+        },
+        {
+          "screen_name": "antiaging_uncle",
+          "display_name": "antiaging_uncle",
+          "followers_count": 118924,
+          "bio": "ダイエット相談、情報を発信してます\n慶應大学SFC研究所ヘルスサイエンス・ラボ会員\n\n日本ダイエット健康協会認定\nインストラクター・プロフェッショナルアドバイザー\n\n日本エステティック協会認定\n美肌エ"
+        },
+        {
+          "screen_name": "weed_51002",
+          "display_name": "weed_51002",
+          "followers_count": 91916,
+          "bio": "DMで嘘の筋トレを募集します。提供以外で何かあれば中の人(@weed_5100)まで。Amazonアソシエイト参加中"
+        },
+        {
+          "screen_name": "chipi_little",
+          "display_name": "chipi_little",
+          "followers_count": 83450,
+          "bio": "ボディメイク講師｜45歳からの一生モノの身体づくり｜自分らしく年を重ね美を育むためのマインドや心がけを発信｜初書籍「ふわトレッチ」好評発売中📚｜体質ボディメイク個別相談「魔法の90分」くわしいご案内は"
+        },
+        {
+          "screen_name": "souhmovu",
+          "display_name": "souhmovu",
+          "followers_count": 76289,
+          "bio": "筋トレの有益な情報 モチベーション動画 ダイエットの方法 健康に無理なく痩せる方法などを紹介 YouTube ➡︎ https://t.co/yg72Gc2VCz —IHerb 割引は👇 紹介コード:"
+        },
+        {
+          "screen_name": "upsagyoka",
+          "display_name": "upsagyoka",
+          "followers_count": 64579,
+          "bio": "ゴリパラ見聞録が好き。ゴリパラキッズ。趣味を楽しみながら人生を謳歌したい、をモットーに日々ストレスフリーを目指しております。 良かったら動画を覗いて下さい→https://t.co/L58qURQGc"
+        },
+        {
+          "screen_name": "motos_fit",
+          "display_name": "motos_fit",
+          "followers_count": 56722,
+          "bio": "女性ダイエットの専門家｜「整体×トレーニング×食事管理」で身体を激変させる女性専用パーソナルジムBLOOM代表｜"
+        },
+        {
+          "screen_name": "aminnn_kld",
+          "display_name": "aminnn_kld",
+          "followers_count": 54899,
+          "bio": "女性らしく引き締まった身体作り🌸｜渋谷の女性専門パーソナルトレーナー | NSCA-CPT | 指導歴10年 | トレーニングウェアブランド「ABY」準備中 | 食事管理×筋トレ×美容で、健康的でキレ"
+        },
+        {
+          "screen_name": "mametamacho",
+          "display_name": "mametamacho",
+          "followers_count": 45620,
+          "bio": "たくさん食べて痩せるダイエット・筋トレ術を毎日投稿中。YouTube登録者数68万人|日本一の筋トレコンビYouTuber|300名以上が参加する人生で一度は腹筋を割る「SIX-PACKプロジェクト講"
+        },
+        {
+          "screen_name": "kireiniyaseru_1",
+          "display_name": "kireiniyaseru_1",
+          "followers_count": 42818,
+          "bio": "30年間で1万人以上の方に目的別運動プログラムを鉛筆一本で作成してきたフィットネスクラブの猫好きインストラクターです。日本トレーニング指導者協会　認定指導員(JATI-ATI)、健康運動指導士、NSC"
+        }
+      ]
+    },
+    {
+      "community_id": "startup",
+      "community_name": "起業・スタートアップ界隈",
+      "member_count": 45,
+      "active_member_count": 39,
+      "total_followers_reach": 2322517,
+      "median_followers": 17616,
+      "influencer_count": 26,
+      "top_influencers": [
+        {
+          "screen_name": "flysaa",
+          "display_name": "flysaa",
+          "followers_count": 441486,
+          "bio": "The home of South African Airways - Africa's Most Awarded Airline https://t.co/QD29rX45N6. \nFor supp"
+        },
+        {
+          "screen_name": "jasonlk",
+          "display_name": "jasonlk",
+          "followers_count": 234403,
+          "bio": "GET funded ➡ $200m https://t.co/AVvPIrIdFP🦄🦄🦄🦄🦄🦄🦄 FREE PLAYBOOK ➡ https://t.co/TIsMr22AhO CHAT Digit"
+        },
+        {
+          "screen_name": "Farmacia_SAAS",
+          "display_name": "Farmacia_SAAS",
+          "followers_count": 233426,
+          "bio": "Cuenta oficial de la red de Farmacia SAAS, la más grande del país, cuyo sello distintivo es el servi"
+        },
+        {
+          "screen_name": "mizoguchi_yuji",
+          "display_name": "mizoguchi_yuji",
+          "followers_count": 210716,
+          "bio": "CEO @realvalue_jp @NoBorder_info @breakingdown_jp @herozz_jp @XDjp_official @yoakef_jp | 著書:持たざる者の逆襲"
+        },
+        {
+          "screen_name": "zosentarou",
+          "display_name": "zosentarou",
+          "followers_count": 142457,
+          "bio": "※sponsored by 社長ファイトクラブ/医学部1年生(休学中)/21歳/資産100万→6.8億/書籍「勝ち目を見抜く力」/MEGA BIG2億当選/Z世代/株しかできません/Xが仕事/株歴9年"
+        },
+        {
+          "screen_name": "kitahara64",
+          "display_name": "kitahara64",
+          "followers_count": 111342,
+          "bio": "起業家育成スクールを運営｜会員数2300人超｜31歳月給26万→グループ年商50億｜多業種で16社経営｜グループ全体実店舗数270店舗｜5年で全国展開した美容室Dearsの創設者｜企業コンサル契約10"
+        },
+        {
+          "screen_name": "SaaS_product",
+          "display_name": "SaaS_product",
+          "followers_count": 109586,
+          "bio": "裏垢(@SaaS_background)"
+        },
+        {
+          "screen_name": "SaAskExp",
+          "display_name": "SaAskExp",
+          "followers_count": 78981,
+          "bio": "ساعد وشارك بأفضل النصائح والتجارب"
+        },
+        {
+          "screen_name": "ceo_01music",
+          "display_name": "ceo_01music",
+          "followers_count": 70420,
+          "bio": "AIを核に創立115年の日本コロムビアを改革し、次世代型IPプロデュースカンパニーを目指す日本コロムビアグループ代表取締役社長▶連続起業で会社複数社売却（累計50億円）▶︎7年間シンガポール移住、ビー"
+        },
+        {
+          "screen_name": "SaaSGoOfficial",
+          "display_name": "SaaSGoOfficial",
+          "followers_count": 67844,
+          "bio": "SaaSGo is the world’s first Fiat-DeFi integrated Web3 SaaS platform. 🔗https://t.co/rTLNnPZjSq ｜Offic"
+        }
+      ]
+    },
+    {
+      "community_id": "fx_traders",
+      "community_name": "FX・投資界隈",
+      "member_count": 42,
+      "active_member_count": 40,
+      "total_followers_reach": 4176806,
+      "median_followers": 50994,
+      "influencer_count": 36,
+      "top_influencers": [
+        {
+          "screen_name": "cissan_9984",
+          "display_name": "cissan_9984",
+          "followers_count": 740452,
+          "bio": "資産430億円株投資家 ポーカー、ブルゴーニュワイン、麻雀、新信長の野望、にゃんこ大戦争"
+        },
+        {
+          "screen_name": "CanalFX_la",
+          "display_name": "CanalFX_la",
+          "followers_count": 500640,
+          "bio": "Twitter oficial de Canal FX Latinoamérica. Síguenos en:\n🤳IG: @canalfx \n👍 FB: @canalfx.latino"
+        },
+        {
+          "screen_name": "hitsuzikai",
+          "display_name": "hitsuzikai",
+          "followers_count": 262776,
+          "bio": "『羊飼いブログ』の管理人、ザイFX！などにも登場🐏FX入門本は複数アリ。ダイヤモンド社の本は40万部以上売れています。★★FXブログは毎日更新中★★『今日のFX！』は毎朝6時台にアップ予定☆(ゝω･)"
+        },
+        {
+          "screen_name": "Min_FX",
+          "display_name": "Min_FX",
+          "followers_count": 246617,
+          "bio": "為替ディーラーが相場を呟く。本ツイートは情報提供を目的としており、内容の正確性が保証されるものではありません。本情報により生じた損害について当社は一切の責任を負いません。■トレイダーズ証券(株) 金融"
+        },
+        {
+          "screen_name": "CanalFX_br",
+          "display_name": "CanalFX_br",
+          "followers_count": 233216,
+          "bio": "Perfil oficial do Canal FX Brasil."
+        },
+        {
+          "screen_name": "FXNetworks",
+          "display_name": "FXNetworks",
+          "followers_count": 218361,
+          "bio": "Critically-acclaimed. Award-winning. Fearless."
+        },
+        {
+          "screen_name": "yocchan60",
+          "display_name": "yocchan60",
+          "followers_count": 217363,
+          "bio": "#シンガポール 在住の連続起業家&投資家｜35歳｜BLITZ GROUP 代表 ｜@bit_castle 創業者｜東京理科大中退→WEBマーケ会社創業→年商40億超え→仮想通貨投資で30億円稼ぐ｜ #"
+        },
+        {
+          "screen_name": "oreteki_douga",
+          "display_name": "oreteki_douga",
+          "followers_count": 207423,
+          "bio": "オレ的ゲーム速報管理人Jin115が投資を行うアカウントです。Youtubeにて随時報告を行っています。https://t.co/mKuyBtqLTW 【ライブ配信】平日21時配信中！オレ的ゲーム速報"
+        },
+        {
+          "screen_name": "fluxo_complex9",
+          "display_name": "fluxo_complex9",
+          "followers_count": 178811,
+          "bio": "Rodrigo Braga | Coach e Influencer @fluxogg"
+        },
+        {
+          "screen_name": "Ghost9xd",
+          "display_name": "Ghost9xd",
+          "followers_count": 171450,
+          "bio": "Professional player for @fluxogg Free Fire Emulador"
+        }
+      ]
+    },
+    {
+      "community_id": "host",
+      "community_name": "ホスト界隈",
+      "member_count": 37,
+      "active_member_count": 35,
+      "total_followers_reach": 541999,
+      "median_followers": 3206,
+      "influencer_count": 15,
+      "top_influencers": [
+        {
+          "screen_name": "nagoya__fuzoku",
+          "display_name": "nagoya__fuzoku",
+          "followers_count": 103725,
+          "bio": "即レスで親身にサポートさせて頂きます💪"
+        },
+        {
+          "screen_name": "ouran_20th",
+          "display_name": "ouran_20th",
+          "followers_count": 92140,
+          "bio": "TVアニメ「桜蘭高校ホスト部」放送20周年☆彡\n期間限定でアニメ関連情報をお届けします！\n原作：葉鳥ビスコ（白泉社・LaLa）\n#桜蘭高校ホスト部"
+        },
+        {
+          "screen_name": "ebuhosu_anime",
+          "display_name": "ebuhosu_anime",
+          "followers_count": 88074,
+          "bio": "アニメ「#えぶりでいホスト」アットホームなホストクラブです(^o^)\n続編制作決定🤙 原作 #ごとうにも 監督・脚本 #ラレコ #アニメえぶホス"
+        },
+        {
+          "screen_name": "ourancafe",
+          "display_name": "ourancafe",
+          "followers_count": 39480,
+          "bio": "『桜蘭高校ホスト部』コラボカフェ2026年の開催が決定！｜東京【#MyCharafulCafe】：2026年1月8日(木)〜3月15日(日) ｜池袋：3月6日(金)〜5月17日(日)｜大阪：4月22日"
+        },
+        {
+          "screen_name": "arimura_kon",
+          "display_name": "arimura_kon",
+          "followers_count": 34430,
+          "bio": "ホリプロ所属😊映画🎬2年でインバウンド民泊ホテル35軒。問い合わせはこちらhttps://t.co/nFhJ5y64Dj FC加盟店募集。https://t.co/30ddLDJChM 総フォロワー1"
+        },
+        {
+          "screen_name": "superschoolbot",
+          "display_name": "superschoolbot",
+          "followers_count": 27654,
+          "bio": "歌舞伎町Lillion  主任  公立進学校botと言われたりもします    ご指名希望の方はDMください"
+        },
+        {
+          "screen_name": "chiwawa_sasaki",
+          "display_name": "chiwawa_sasaki",
+          "followers_count": 25934,
+          "bio": "ライター、慶應SFC卒。歌舞伎町の社会学を研究しています。著書『「ぴえん」という病』『歌舞伎町モラトリアム』『オーバードーズな人たち』『歌舞伎町に沼る若者たち』メディア出演多数 ✉️sasakinan"
+        },
+        {
+          "screen_name": "ShortCakeCo_",
+          "display_name": "ShortCakeCo_",
+          "followers_count": 16057,
+          "bio": "新宿歌舞伎町ショートケーキ専門店 ｜夜ケーキ&パフェ １人用ホールケーキを希少なジャージー生クリームで🎂 3F 17:00-22:30LO｜3月 ミモザショートケーキ🌼 2F 18:00-22:30L"
+        },
+        {
+          "screen_name": "hostchanjp",
+          "display_name": "hostchanjp",
+          "followers_count": 15733,
+          "bio": "舞台「私のホストちゃん」、本気の終幕!! 2020年1月～2月、東京・名古屋・大阪にて開催"
+        },
+        {
+          "screen_name": "ubshinjuku",
+          "display_name": "ubshinjuku",
+          "followers_count": 15015,
+          "bio": "⭐️当院は完全予約制です⭐️ルビーフラクショナル ピコスポット モフィウス8 トライフィルプロ Vビーム インモード ジェントルマックスプロプラス ボルニューマ シルファーム ポテンツァ ルメッカ 糸"
+        }
+      ]
+    },
+    {
+      "community_id": "nanpa",
+      "community_name": "ナンパ界隈",
+      "member_count": 31,
+      "active_member_count": 31,
+      "total_followers_reach": 383068,
+      "median_followers": 2273,
+      "influencer_count": 14,
+      "top_influencers": [
+        {
+          "screen_name": "aokiaoki1111",
+          "display_name": "aokiaoki1111",
+          "followers_count": 69587,
+          "bio": "ジャーナリスト、作家。日本ペンクラブ言論表現副委員長。『#なぜ日本は原発を止められないのか？ 』（文藝春秋）は脱原発文学大賞、貧困ジャーナリズム賞受賞。https://t.co/lKmys9YJjBで"
+        },
+        {
+          "screen_name": "fakenumber",
+          "display_name": "fakenumber",
+          "followers_count": 49638,
+          "bio": "🏠住まい無料✖️🍚食事支援✖️💰日払いOK所持金ゼロでも今日から生活再スタート可能！全国からの応募に対応してます！ #住み込み #生活支援"
+        },
+        {
+          "screen_name": "Hanzawatsuyoshi",
+          "display_name": "Hanzawatsuyoshi",
+          "followers_count": 36906,
+          "bio": "かんき出版 営業クエスト“即決に導く”黄金の方程式著者｜ﾌﾟﾚｼﾞﾃﾞﾝﾄ､flierメディア掲載｜累計販売24億円･法人営業のプロ｜13年連続No.1継続中｜セールスを劇場風に学ぶ｜Voicyﾊﾟｰ"
+        },
+        {
+          "screen_name": "nonchama0721",
+          "display_name": "nonchama0721",
+          "followers_count": 32924,
+          "bio": "ストリートナンパのプロ｜ナンパ界隈で最もnoteのフォロワーが多い人（累計4,643人）｜note累計20,000部販売｜週刊SPA！2022年8月掲載"
+        },
+        {
+          "screen_name": "DaygameAbroad",
+          "display_name": "DaygameAbroad",
+          "followers_count": 30748,
+          "bio": "うまく話せた日も、会話にならなかった日も、声を発せなかった日もある。ノウハウでも成功体験でもない。その日の様子を、そのまま残す。"
+        },
+        {
+          "screen_name": "tinder_ban",
+          "display_name": "tinder_ban",
+          "followers_count": 30497,
+          "bio": "🔥メディア欄でお持ち帰りメッセージ紹介🔥マッチングアプリ攻略発信の最大手｜with全国1位👑いいね数9999+｜タップル7日で2000いいかも｜恋愛テクやアプリで人気会員になる方法を発信｜ナンパ界隈で"
+        },
+        {
+          "screen_name": "host_and_guest",
+          "display_name": "host_and_guest",
+          "followers_count": 21094,
+          "bio": "🔥稼ぎましょう🔥🌈近々からの対応も可能🌈❄️SNSスカウト12年→現役でスカウトしておりますので、今最も人気のあるお店を優先的にご紹介致します❄️2022年現在、AV女優80名以上、風俗500名以上、"
+        },
+        {
+          "screen_name": "nanpawars",
+          "display_name": "nanpawars",
+          "followers_count": 20858,
+          "bio": "ナンパ師。美女ナンパに命賭けてます。無双武器の一覧はこちらからhttps://t.co/650Z0VmOld"
+        },
+        {
+          "screen_name": "yutty_pua",
+          "display_name": "yutty_pua",
+          "followers_count": 15948,
+          "bio": "ナンパ講師/現役ナンパ師（歴5年）/経験人数300人↑/1日で184人の女性からLINEゲット（日本記録）/指導実績350人以上/note累計1000部超え/身長161.8cm/ナンパで結婚→1児の父"
+        },
+        {
+          "screen_name": "IanRudgeley",
+          "display_name": "IanRudgeley",
+          "followers_count": 15926,
+          "bio": "今すぐガッツリ稼ぎたい！方お任せください！男女共に可能！住む家なくても！所持金0でも！携帯なくても！面接会場までの交通費支援可能！勤務先までの赴任費用の支援！全てお任せください‼️"
+        }
+      ]
+    }
+  ],
+  "overlaps": [
+    {
+      "community_a": "fx_traders",
+      "community_b": "host",
+      "intersection_count": 0,
+      "union_count": 79,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "fx_traders",
+      "community_b": "muscle",
+      "intersection_count": 0,
+      "union_count": 99,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "fx_traders",
+      "community_b": "nanpa",
+      "intersection_count": 0,
+      "union_count": 73,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "fx_traders",
+      "community_b": "startup",
+      "intersection_count": 0,
+      "union_count": 87,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "host",
+      "community_b": "muscle",
+      "intersection_count": 0,
+      "union_count": 94,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "host",
+      "community_b": "nanpa",
+      "intersection_count": 0,
+      "union_count": 68,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "host",
+      "community_b": "startup",
+      "intersection_count": 0,
+      "union_count": 82,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "muscle",
+      "community_b": "nanpa",
+      "intersection_count": 0,
+      "union_count": 88,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "muscle",
+      "community_b": "startup",
+      "intersection_count": 0,
+      "union_count": 102,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "nanpa",
+      "community_b": "startup",
+      "intersection_count": 0,
+      "union_count": 76,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    }
+  ],
+  "overlap_matrix": {
+    "community_ids": [
+      "fx_traders",
+      "host",
+      "muscle",
+      "nanpa",
+      "startup"
+    ],
+    "matrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  }
+};  // Will be replaced with actual JSON data
 
 // --- Rendering ---
 function formatNum(n) {

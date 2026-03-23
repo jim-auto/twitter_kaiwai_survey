@@ -1,10 +1,9 @@
 """フォローグラフ収集パイプライン（Stage 2: フォロー拡張）"""
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 
 from communities import CommunityDef
-from db.models import get_session, init_db
+from db.models import CommunityMember, FollowEdge, User, get_session, init_db
 from db.ops import (
     add_community_member,
     add_follow_edge,
@@ -14,34 +13,38 @@ from db.ops import (
 from scraping.auth import create_worker_pool
 
 
-def collect_follow_graph(community: CommunityDef):
-    """シードのフォローグラフを収集し、共通フォローでスコアリング"""
+def collect_follow_graph(community: CommunityDef, max_seeds: int = 10):
+    """メンバーのフォローグラフを収集し、共通フォローでスコアリング"""
     print(f"\n{'='*50}")
-    print(f"フォローグラフ収集: {community.name}")
+    print(f"Follow graph: {community.name}")
     print(f"{'='*50}")
 
     init_db()
     session = get_session()
     workers = create_worker_pool()
 
-    # シードメンバーを取得
-    member_ids = get_community_member_ids(session, community.id, min_confidence=0.8)
-    seed_screen_names = []
+    # フォロー取得対象: confidence >= 0.3 かつ following_count > 100 の上位メンバー
+    rows = (
+        session.query(User, CommunityMember.confidence)
+        .join(CommunityMember, User.user_id == CommunityMember.user_id)
+        .filter(CommunityMember.community_id == community.id)
+        .filter(CommunityMember.confidence >= 0.3)
+        .filter(User.following_count > 100)
+        .order_by(User.followers_count.desc())
+        .limit(max_seeds)
+        .all()
+    )
 
-    for uid in member_ids:
-        from db.models import User
-        user = session.get(User, uid)
-        if user and user.screen_name:
-            seed_screen_names.append(user.screen_name)
+    seed_screen_names = [u.screen_name for u, _ in rows if u.screen_name]
+    sn_to_id = {u.screen_name: u.user_id for u, _ in rows if u.screen_name}
 
     if not seed_screen_names:
-        print("[ERROR] シードが見つかりません。先にdiscoverを実行してください")
+        print("[SKIP] Following > 100 のメンバーがいません")
         session.close()
         return
 
-    # 既にフォローグラフ取得済みのユーザーをスキップ
+    # 既にフォローグラフ取得済みをスキップ
     from sqlalchemy import func
-    from db.models import FollowEdge
     already_scraped = {
         r[0] for r in
         session.query(FollowEdge.source_user_id)
@@ -49,54 +52,43 @@ def collect_follow_graph(community: CommunityDef):
         .having(func.count() > 0)
         .all()
     }
-    # screen_name → user_id マッピング
-    from db.models import User
-    sn_to_id = {}
-    for sn in seed_screen_names:
-        user = session.query(User).filter(User.screen_name == sn).first()
-        if user:
-            sn_to_id[sn] = user.user_id
 
     remaining = [sn for sn in seed_screen_names if sn_to_id.get(sn) not in already_scraped]
-    print(f"[INFO] シード: {len(seed_screen_names)}, 未取得: {len(remaining)}")
+    print(f"[INFO] Seeds: {len(seed_screen_names)}, remaining: {len(remaining)}")
 
-    if not remaining:
-        print("[INFO] 全シードのフォローグラフ取得済み。スコアリングへ進みます。")
-    else:
-        # マルチワーカー並列でFollowing取得
+    if remaining:
         num_workers = min(len(workers), len(remaining))
         chunks = [[] for _ in range(num_workers)]
         for i, sn in enumerate(remaining):
             chunks[i % num_workers].append(sn)
 
-        print(f"\n[Phase 1] {num_workers}ワーカー並列でFollowing取得")
+        print(f"\n[Phase 1] {num_workers} workers fetching Following lists")
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = {}
             for i in range(num_workers):
-                future = executor.submit(workers[i].process_following_batch, chunks[i])
-                futures[future] = i + 1
+                if chunks[i]:
+                    future = executor.submit(workers[i].process_following_batch, chunks[i])
+                    futures[future] = i + 1
 
             for future in as_completed(futures):
                 wid = futures[future]
                 try:
                     results = future.result()
-                    # DBにフォローエッジを保存
                     for source_sn, following_list in results.items():
                         source_id = sn_to_id.get(source_sn, source_sn)
                         for target_sn in following_list:
-                            # target_snのuser_idが不明な場合はscreen_nameを仮IDとして使用
                             target_user = session.query(User).filter(User.screen_name == target_sn).first()
                             target_id = target_user.user_id if target_user else f"sn:{target_sn}"
                             if not target_user:
                                 upsert_user(session, target_id, screen_name=target_sn)
                             add_follow_edge(session, source_id, target_id)
                         session.commit()
-                    print(f"  [W{wid}] 完了: {len(results)} アカウント分")
+                    print(f"  [W{wid}] done: {len(results)} accounts")
                 except Exception as e:
-                    print(f"  [W{wid}] エラー: {e}")
+                    print(f"  [W{wid}] error: {e}")
 
     # --- Phase 2: スコアリング ---
-    print(f"\n[Phase 2] 共通フォローでスコアリング")
+    print(f"\n[Phase 2] Scoring by shared follows")
     min_shared = community.expansion.get("min_shared_follows", 3)
     max_members = community.expansion.get("max_members", 5000)
 
@@ -110,23 +102,21 @@ def collect_follow_graph(community: CommunityDef):
         for edge in edges:
             appearance_count[edge.target_user_id] += 1
 
-    # 既存メンバーを除外
     existing_ids = get_community_member_ids(session, community.id)
+    # min_shared を動的調整（シード少ない場合は2に下げる）
+    effective_min = min(min_shared, max(2, len(seed_screen_names) // 3))
     candidates = {
         uid: count for uid, count in appearance_count.items()
-        if count >= min_shared and uid not in existing_ids
+        if count >= effective_min and uid not in existing_ids
     }
 
-    # 上位からメンバー登録
     sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)[:max_members]
-    print(f"  候補: {len(candidates)}, 登録上限: {max_members}")
+    print(f"  Candidates: {len(candidates)} (min_shared={effective_min})")
 
     added = 0
     for uid, shared in sorted_candidates:
-        # confidenceは共通フォロー数に基づいて算出
         max_possible = len(seed_screen_names)
-        confidence = min(shared / max(max_possible, 1) * 0.8, 0.9)  # 最大0.9（seedの1.0と区別）
-
+        confidence = min(shared / max(max_possible, 1) * 0.8, 0.9)
         add_community_member(
             session, community.id, uid,
             confidence=confidence,
@@ -137,11 +127,12 @@ def collect_follow_graph(community: CommunityDef):
 
     session.commit()
 
-    # スコア分布表示
+    # スコア分布
     score_dist = Counter(candidates.values())
     for score in sorted(score_dist.keys(), reverse=True)[:10]:
-        print(f"    {score}共通={score_dist[score]}件", end=" ")
-    print()
+        print(f"    {score}shared={score_dist[score]}", end=" ")
+    if score_dist:
+        print()
 
-    print(f"\n[完了] {added} メンバー追加（共通フォロー >= {min_shared}）")
+    print(f"\n[Done] +{added} members (shared >= {effective_min})")
     session.close()

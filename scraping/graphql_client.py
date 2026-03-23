@@ -10,6 +10,8 @@ from config.settings import (
     GRAPHQL_FOLLOWING,
     GRAPHQL_SEARCH_TIMELINE,
     GRAPHQL_USER_BY_SCREEN_NAME,
+    SEARCH_FEATURES,
+    SEARCH_FIELD_TOGGLES,
     TIMELINE_FEATURES,
     USER_AGENT,
     USER_FEATURES,
@@ -148,11 +150,17 @@ class TwitterGraphQL:
                     content = entry.get("content", {})
                     ur = content.get("itemContent", {}).get("user_results", {}).get("result", {})
                     if ur:
-                        sn = ur.get("legacy", {}).get("screen_name", "")
+                        # screen_name は core または legacy にある
+                        sn = (ur.get("core", {}).get("screen_name", "")
+                              or ur.get("legacy", {}).get("screen_name", ""))
                         if sn:
                             all_users.append(sn)
                             found += 1
-                    if content.get("cursorType") == "Bottom":
+                    # カーソルはentryId or cursorTypeで判定
+                    entry_id = entry.get("entryId", "")
+                    if entry_id.startswith("cursor-bottom"):
+                        new_cursor = content.get("value")
+                    elif content.get("cursorType") == "Bottom":
                         new_cursor = content.get("value")
             if not new_cursor or found == 0:
                 break
@@ -160,76 +168,63 @@ class TwitterGraphQL:
         return all_users
 
     def search_users(self, query: str, max_pages: int = 5) -> list[dict]:
-        """ツイート検索でユーザーを発見（SearchTimelineエンドポイント）"""
+        """ユーザー検索（typeahead → get_user でフルプロフィール取得）"""
         all_users = []
         seen_ids = set()
-        cursor = None
 
-        for _ in range(max_pages):
-            variables = {
-                "rawQuery": query,
-                "count": 20,
-                "querySource": "typed_query",
-                "product": "People",
-            }
-            if cursor:
-                variables["cursor"] = cursor
-
-            for attempt in range(3):
-                try:
-                    resp = self.session.get(
-                        GRAPHQL_SEARCH_TIMELINE,
-                        params={
-                            "variables": json.dumps(variables),
-                            "features": TIMELINE_FEATURES,
-                        },
-                        timeout=15,
-                    )
-                    if self._wait_if_rate_limited("SearchTimeline", resp):
-                        continue
-                    break
-                except Exception:
-                    if attempt < 2:
-                        time.sleep(2)
-                    else:
-                        return all_users
-
-            if resp.status_code != 200:
+        # typeahead で候補screen_name取得
+        for attempt in range(3):
+            try:
+                resp = self.session.get(
+                    "https://x.com/i/api/1.1/search/typeahead.json",
+                    params={
+                        "q": query.replace("#", ""),
+                        "src": "search_box",
+                        "result_type": "users",
+                    },
+                    timeout=15,
+                )
+                if self._wait_if_rate_limited("Typeahead", resp):
+                    continue
                 break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2)
+                else:
+                    return all_users
 
+        if resp.status_code != 200 or not resp.text:
+            return all_users
+
+        try:
             data = resp.json()
-            instructions = (
-                data.get("data", {}).get("search_by_raw_query", {})
-                .get("search_timeline", {}).get("timeline", {})
-                .get("instructions", [])
-            )
+        except Exception:
+            return all_users
 
-            new_cursor = None
-            found = 0
-            for inst in instructions:
-                for entry in inst.get("entries", []):
-                    content = entry.get("content", {})
-                    ur = content.get("itemContent", {}).get("user_results", {}).get("result", {})
-                    if ur and ur.get("rest_id") and ur["rest_id"] not in seen_ids:
-                        legacy = ur.get("legacy", {})
-                        seen_ids.add(ur["rest_id"])
-                        all_users.append({
-                            "rest_id": ur["rest_id"],
-                            "screen_name": legacy.get("screen_name", ""),
-                            "name": legacy.get("name", ""),
-                            "description": legacy.get("description", ""),
-                            "followers_count": legacy.get("followers_count", 0),
-                            "following_count": legacy.get("friends_count", 0),
-                            "tweet_count": legacy.get("statuses_count", 0),
-                            "profile_image_url": legacy.get("profile_image_url_https", ""),
-                        })
-                        found += 1
-                    if content.get("cursorType") == "Bottom":
-                        new_cursor = content.get("value")
-            if not new_cursor or found == 0:
-                break
-            cursor = new_cursor
-            time.sleep(1)  # 検索は控えめに
+        candidates = data.get("users", [])
+
+        # 各候補のフルプロフィールを取得
+        for candidate in candidates:
+            screen_name = candidate.get("screen_name", "")
+            if not screen_name:
+                continue
+
+            user_data = self.get_user(screen_name)
+            if not user_data or user_data["rest_id"] in seen_ids:
+                continue
+
+            seen_ids.add(user_data["rest_id"])
+            all_users.append({
+                "rest_id": user_data["rest_id"],
+                "screen_name": user_data["screen_name"],
+                "name": user_data["name"],
+                "description": user_data["description"],
+                "followers_count": user_data["followers_count"],
+                "following_count": user_data["following_count"],
+                "tweet_count": user_data["tweet_count"],
+                "profile_image_url": user_data.get("profile_image_url", ""),
+            })
+            time.sleep(0.5)
 
         return all_users
 

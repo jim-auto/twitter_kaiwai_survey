@@ -35,9 +35,9 @@ def create_worker_pool() -> list[TwitterGraphQL]:
         try:
             worker = TwitterGraphQL(str(cf), worker_id=i + 1)
             workers.append(worker)
-            print(f"  [Worker {i + 1}] {cf.name} ✓")
+            print(f"  [Worker {i + 1}] {cf.name} OK")
         except Exception as e:
-            print(f"  [Worker {i + 1}] {cf.name} × ({e})")
+            print(f"  [Worker {i + 1}] {cf.name} FAIL ({e})")
 
     if not workers:
         raise RuntimeError("有効なワーカーがありません")

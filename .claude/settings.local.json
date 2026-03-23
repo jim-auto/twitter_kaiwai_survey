@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"import\" /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/*.py)",
+      "Bash(ls -la /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/*.py)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(python:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)",
+      "Bash(ls -la /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/.twitter_cookies*.json)",
+      "Bash(set PYTHONIOENCODING=utf-8)"
+    ]
+  }
+}
