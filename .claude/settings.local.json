@@ -11,7 +11,8 @@
       "Bash(git push:*)",
       "Bash(gh api:*)",
       "Bash(ls -la /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/.twitter_cookies*.json)",
-      "Bash(set PYTHONIOENCODING=utf-8)"
+      "Bash(set PYTHONIOENCODING=utf-8)",
+      "WebSearch"
     ]
   }
 }

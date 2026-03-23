@@ -2,7 +2,21 @@ id: host
 name: ホスト界隈
 description: "ホストクラブ、ホスト文化関連のコミュニティ"
 
-seeds: []
+seeds:
+  - username: roland_0fficial
+    role: influencer
+  - username: dewl_ryoma
+    role: influencer
+  - username: masaking927
+    role: influencer
+  - username: natsukishibuya
+    role: active
+  - username: smappatekka
+    role: active
+  - username: groupdandy
+    role: media
+  - username: fgr118
+    role: media
 
 hashtags:
   - "#ホスト"
@@ -15,10 +29,10 @@ keywords:
   - "ナンバーワン ホスト"
 
 bio_patterns:
-  - "(ホスト|歌舞伎町|ミナミ|すすきの|指名|ナンバー入り)"
+  - "(ホスト|歌舞伎町|ミナミ|すすきの|指名|ナンバー入り|シャンパン|ダンディ|冬月)"
 
 exclude_patterns:
-  - "(公式|求人|企業|ニュース|ホストファミリー)"
+  - "(公式求人|求人サイト|ニュース|ホストファミリー)"
 
 expansion:
   max_depth: 2

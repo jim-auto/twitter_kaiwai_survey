@@ -2,7 +2,23 @@ id: startup
 name: 起業・スタートアップ界隈
 description: "起業家、スタートアップ創業者、VC関連のコミュニティ"
 
-seeds: []
+seeds:
+  - username: takapon_jp
+    role: influencer
+  - username: kensuu
+    role: influencer
+  - username: hbkr
+    role: influencer
+  - username: suadd
+    role: influencer
+  - username: djtokyo
+    role: active
+  - username: Anrit
+    role: active
+  - username: chibakotaro
+    role: active
+  - username: taiga__
+    role: active
 
 hashtags:
   - "#起業"
@@ -15,7 +31,7 @@ keywords:
   - "Series A 調達"
 
 bio_patterns:
-  - "(起業|CEO|CTO|創業者|スタートアップ|ファウンダー|founder|代表取締役)"
+  - "(起業|CEO|CTO|創業者|スタートアップ|ファウンダー|founder|代表取締役|VC|ベンチャーキャピタル)"
 
 exclude_patterns:
   - "(公式|ニュース|メディア|求人)"

@@ -2,7 +2,25 @@ id: muscle
 name: 筋トレ界隈
 description: "筋トレ・フィットネス・ボディメイク系コミュニティ"
 
-seeds: []
+seeds:
+  - username: badassceo
+    role: influencer
+  - username: YokokawaNaotaka
+    role: influencer
+  - username: kinnikun0917
+    role: influencer
+  - username: greatsaiyaman02
+    role: influencer
+  - username: YamasawaRey
+    role: influencer
+  - username: JIN__XENO
+    role: active
+  - username: edwardkato_
+    role: active
+  - username: protein1214
+    role: active
+  - username: claymoreberserk
+    role: active
 
 hashtags:
   - "#筋トレ"
@@ -16,7 +34,7 @@ keywords:
   - "ベンチプレス MAX"
 
 bio_patterns:
-  - "(筋トレ|フィットネス|ボディメイク|フィジーク|パワーリフ|ベンチプレス|デッドリフト|スクワット)"
+  - "(筋トレ|フィットネス|ボディメイク|フィジーク|パワーリフ|ベンチプレス|デッドリフト|スクワット|IFBB|JBBF)"
 
 exclude_patterns:
   - "(公式|企業|ニュース|PR|広告|サプリ販売)"

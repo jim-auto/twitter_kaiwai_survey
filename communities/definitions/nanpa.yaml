@@ -3,8 +3,22 @@ name: ナンパ界隈
 description: "ストリートナンパ、クラブナンパ、ネトナン等のPUA系コミュニティ"
 
 seeds:
-  - username: ring_040304
+  - username: kazu_fujisawa
     role: influencer
+  - username: nanpasireiji
+    role: influencer
+  - username: osugi_pua
+    role: influencer
+  - username: sshi_pua
+    role: active
+  - username: nanpawars
+    role: active
+  - username: suiseinanpa
+    role: active
+  - username: nanpads
+    role: active
+  - username: Heritage_of_PUA
+    role: media
 
 hashtags:
   - "#ナンパ"
@@ -18,7 +32,7 @@ keywords:
   - "声かけ 連れ出し"
 
 bio_patterns:
-  - "(ナンパ|即数|斬り|pua|ストナン|ネトナン|即日|連れ出し)"
+  - "(ナンパ|即数|斬り|pua|ストナン|ネトナン|即日|連れ出し|恋愛工学)"
 
 exclude_patterns:
   - "(公式|企業|ニュース|news|official|防犯|警察)"

@@ -14,6 +14,16 @@ def upsert_user(session: Session, user_id: str, **kwargs) -> User:
                 setattr(user, k, v)
         user.last_scraped = datetime.now(timezone.utc)
     else:
+        # screen_nameが既に別のuser_idで登録されている場合はそちらを更新
+        screen_name = kwargs.get("screen_name")
+        if screen_name:
+            existing = session.query(User).filter(User.screen_name == screen_name).first()
+            if existing:
+                for k, v in kwargs.items():
+                    if v is not None:
+                        setattr(existing, k, v)
+                existing.last_scraped = datetime.now(timezone.utc)
+                return existing
         user = User(user_id=user_id, last_scraped=datetime.now(timezone.utc), **kwargs)
         session.add(user)
     return user

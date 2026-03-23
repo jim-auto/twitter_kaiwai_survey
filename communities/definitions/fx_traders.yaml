@@ -2,7 +2,23 @@ id: fx_traders
 name: FX・投資界隈
 description: "FXトレーダー、株式投資、仮想通貨投資のコミュニティ"
 
-seeds: []
+seeds:
+  - username: cissan_9984
+    role: influencer
+  - username: tesuta001
+    role: influencer
+  - username: hitsuzikai
+    role: influencer
+  - username: okasanman
+    role: influencer
+  - username: JFXkobayashi
+    role: active
+  - username: aki_fx1
+    role: active
+  - username: jin_walletplus1
+    role: active
+  - username: nihontoshiconsa
+    role: active
 
 hashtags:
   - "#FX"
@@ -16,7 +32,7 @@ keywords:
   - "億トレ"
 
 bio_patterns:
-  - "(FX|トレーダー|デイトレ|スキャル|スイング|仮想通貨|億トレ|専業トレーダー)"
+  - "(FX|トレーダー|デイトレ|スキャル|スイング|仮想通貨|億トレ|専業トレーダー|投資家)"
 
 exclude_patterns:
   - "(公式|企業|ニュース|自動売買|EA販売|コンサル募集)"
