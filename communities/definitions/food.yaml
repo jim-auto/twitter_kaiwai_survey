@@ -1,0 +1,39 @@
+id: food
+name: 料理・グルメ界隈
+description: "料理研究家、グルメブロガー、食文化のコミュニティ"
+
+seeds:
+  - username: ore825
+    role: influencer
+  - username: syunkon0507
+    role: influencer
+  - username: mariegohan
+    role: influencer
+  - username: marumi_kitchen
+    role: influencer
+  - username: syokojiro
+    role: active
+  - username: cheap_yummy
+    role: active
+
+hashtags:
+  - "#料理"
+  - "#レシピ"
+  - "#グルメ"
+  - "#自炊"
+
+keywords:
+  - "レシピ 簡単"
+  - "料理研究家"
+  - "バズレシピ"
+
+bio_patterns:
+  - "(料理|レシピ|グルメ|シェフ|料理研究家|自炊|食べ|キッチン)"
+
+exclude_patterns:
+  - "(PR|広告|企業公式)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

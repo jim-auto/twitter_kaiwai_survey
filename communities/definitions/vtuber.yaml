@@ -1,0 +1,46 @@
+id: vtuber
+name: VTuber界隈
+description: "VTuber、ホロライブ、にじさんじ等のバーチャルYouTuberコミュニティ"
+
+seeds:
+  - username: hololivetv
+    role: media
+  - username: nijisanji_app
+    role: media
+  - username: suisei_hosimati
+    role: influencer
+  - username: houshoumarine
+    role: influencer
+  - username: usadapekora
+    role: influencer
+  - username: Vamp_Kuzu
+    role: influencer
+  - username: Kanae_2434
+    role: influencer
+  - username: ui_shig
+    role: active
+  - username: sana_natori
+    role: active
+  - username: ShibuyaHAL
+    role: active
+
+hashtags:
+  - "#VTuber"
+  - "#ホロライブ"
+  - "#にじさんじ"
+
+keywords:
+  - "VTuber 配信"
+  - "ホロライブ 切り抜き"
+  - "にじさんじ ライブ"
+
+bio_patterns:
+  - "(VTuber|Vtuber|ホロライブ|にじさんじ|バーチャル|配信者|ライバー)"
+
+exclude_patterns:
+  - "(公式ニュース|求人)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

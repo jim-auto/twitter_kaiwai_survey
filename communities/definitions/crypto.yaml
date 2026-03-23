@@ -1,0 +1,43 @@
+id: crypto
+name: 仮想通貨・Web3界隈
+description: "仮想通貨、NFT、DeFi、Web3関連のコミュニティ"
+
+seeds:
+  - username: coin_post
+    role: media
+  - username: IHayato
+    role: influencer
+  - username: manabubannai
+    role: influencer
+  - username: Coin_and_Peace
+    role: active
+  - username: sen_axis
+    role: active
+  - username: NftPinuts
+    role: active
+  - username: paji_a
+    role: active
+  - username: CryptoTimes_mag
+    role: media
+
+hashtags:
+  - "#仮想通貨"
+  - "#NFT"
+  - "#Web3"
+  - "#ビットコイン"
+
+keywords:
+  - "仮想通貨 投資"
+  - "NFT アート"
+  - "Web3 DAO"
+
+bio_patterns:
+  - "(仮想通貨|暗号資産|NFT|Web3|DAO|DeFi|ビットコイン|BTC|ETH|ブロックチェーン)"
+
+exclude_patterns:
+  - "(公式ニュース|詐欺|プレゼント企画)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

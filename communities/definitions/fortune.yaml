@@ -1,0 +1,41 @@
+id: fortune
+name: 占い・スピリチュアル界隈
+description: "占い師、スピリチュアル、星読みのコミュニティ"
+
+seeds:
+  - username: getters_iida
+    role: influencer
+  - username: shiitake7919
+    role: influencer
+  - username: Suisho_Tamako
+    role: influencer
+  - username: yujiscope
+    role: active
+  - username: makiakari
+    role: active
+  - username: sugar_su
+    role: active
+  - username: Keiko_updates
+    role: active
+
+hashtags:
+  - "#占い"
+  - "#星読み"
+  - "#タロット"
+  - "#スピリチュアル"
+
+keywords:
+  - "占い 当たる"
+  - "星読み 運勢"
+  - "タロット リーディング"
+
+bio_patterns:
+  - "(占い|星読み|タロット|スピリチュアル|西洋占星術|鑑定|運勢|ホロスコープ)"
+
+exclude_patterns:
+  - "(詐欺|出会い系)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

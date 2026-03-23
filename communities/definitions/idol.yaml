@@ -1,0 +1,37 @@
+id: idol
+name: アイドル界隈
+description: "アイドルファン、ドルオタ、地下アイドル文化のコミュニティ"
+
+seeds:
+  - username: 345__chan
+    role: influencer
+  - username: nogizaka46
+    role: media
+  - username: hinatazaka46
+    role: media
+  - username: mcz517_official
+    role: media
+  - username: tikaidolmatome
+    role: media
+
+hashtags:
+  - "#アイドル"
+  - "#ドルオタ"
+  - "#地下アイドル"
+  - "#乃木坂46"
+
+keywords:
+  - "アイドル 推し"
+  - "地下アイドル チェキ"
+  - "ドルオタ 現場"
+
+bio_patterns:
+  - "(アイドル|ドルオタ|推し|DD|ヲタク|チェキ|乃木坂|日向坂|AKB)"
+
+exclude_patterns:
+  - "(ニュースサイト|まとめサイト)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

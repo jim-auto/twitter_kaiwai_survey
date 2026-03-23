@@ -1,0 +1,42 @@
+id: engineer
+name: エンジニア界隈
+description: "ソフトウェアエンジニア、プログラマー、技術者コミュニティ"
+
+seeds:
+  - username: yukihiro_matz
+    role: influencer
+  - username: naoya_ito
+    role: influencer
+  - username: yusukebe
+    role: influencer
+  - username: fladdict
+    role: influencer
+  - username: ockeghem
+    role: active
+  - username: hyuki
+    role: active
+  - username: dankogai
+    role: active
+  - username: kazuho
+    role: active
+
+hashtags:
+  - "#エンジニア"
+  - "#プログラミング"
+  - "#開発"
+
+keywords:
+  - "エンジニア 転職"
+  - "プログラミング 勉強"
+  - "OSS コントリビュート"
+
+bio_patterns:
+  - "(エンジニア|プログラマ|開発者|CTO|SWE|フロントエンド|バックエンド|インフラ|SRE|DevOps)"
+
+exclude_patterns:
+  - "(プログラミングスクール|受講生募集|PR)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

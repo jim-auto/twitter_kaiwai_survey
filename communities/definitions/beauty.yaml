@@ -1,0 +1,41 @@
+id: beauty
+name: 美容界隈
+description: "美容・コスメ・スキンケア系コミュニティ"
+
+seeds:
+  - username: marunouchi__ol_
+    role: influencer
+  - username: skstibnni
+    role: influencer
+  - username: mrmrmron7
+    role: influencer
+  - username: chicoecco
+    role: active
+  - username: curage_yuyu
+    role: active
+  - username: soi_beauty
+    role: active
+  - username: icetabetaikuma
+    role: active
+
+hashtags:
+  - "#美容垢"
+  - "#コスメ"
+  - "#スキンケア"
+  - "#デパコス"
+
+keywords:
+  - "コスメ レビュー"
+  - "スキンケア おすすめ"
+  - "プチプラ コスメ"
+
+bio_patterns:
+  - "(美容|コスメ|スキンケア|メイク|化粧品|デパコス|プチプラ|化粧品検定)"
+
+exclude_patterns:
+  - "(公式|企業|PR案件|サンプル提供)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

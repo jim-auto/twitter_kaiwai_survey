@@ -1,0 +1,37 @@
+id: sedori
+name: 副業・物販界隈
+description: "せどり、物販、副業ビジネスのコミュニティ"
+
+seeds:
+  - username: funahara
+    role: influencer
+  - username: clusterhasegawa
+    role: influencer
+  - username: fujippulin
+    role: active
+  - username: tenbainoalice
+    role: active
+  - username: gomachandakedo
+    role: active
+
+hashtags:
+  - "#せどり"
+  - "#物販"
+  - "#副業"
+  - "#転売"
+
+keywords:
+  - "せどり 仕入れ"
+  - "物販 月商"
+  - "副業 稼ぐ"
+
+bio_patterns:
+  - "(せどり|物販|転売|副業|仕入れ|Amazon販売|メルカリ|月商|脱サラ)"
+
+exclude_patterns:
+  - "(コンサル生募集|LINE登録|無料プレゼント)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000
