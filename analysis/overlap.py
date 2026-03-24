@@ -28,25 +28,31 @@ class FollowAffinityResult:
     affinity: float  # 双方向平均
 
 
+def _load_member_sets(min_confidence: float = 0.5) -> dict[str, set[str]]:
+    """SQLite直接でメンバーIDセットを取得"""
+    import sqlite3
+
+    from config.settings import DB_PATH
+
+    conn = sqlite3.connect(str(DB_PATH))
+    member_sets: dict[str, set[str]] = {}
+    for cid, uid in conn.execute(
+        "SELECT community_id, user_id FROM community_members WHERE confidence >= ?",
+        (min_confidence,),
+    ).fetchall():
+        member_sets.setdefault(cid, set()).add(uid)
+    conn.close()
+    return member_sets
+
+
 def compute_pairwise_overlap(
     min_confidence: float = 0.5,
 ) -> list[OverlapResult]:
     """全界隈ペアのJaccard類似度 + 非対称重複を算出"""
-    init_db()
-    session = get_session()
-
-    community_ids = get_all_community_ids(session)
+    member_sets = _load_member_sets(min_confidence)
+    community_ids = sorted(member_sets.keys())
     if len(community_ids) < 2:
-        print("[INFO] 2つ以上の界隈が必要です")
-        session.close()
         return []
-
-    # 各界隈のメンバーIDセットをキャッシュ
-    member_sets: dict[str, set[str]] = {}
-    for cid in community_ids:
-        member_sets[cid] = get_community_member_ids(session, cid, min_confidence)
-
-    session.close()
 
     results = []
     for a, b in combinations(community_ids, 2):
@@ -54,20 +60,15 @@ def compute_pairwise_overlap(
         set_b = member_sets[b]
         intersection = set_a & set_b
         union = set_a | set_b
-
         inter_count = len(intersection)
         union_count = len(union)
-
         results.append(OverlapResult(
-            community_a=a,
-            community_b=b,
-            intersection_count=inter_count,
-            union_count=union_count,
+            community_a=a, community_b=b,
+            intersection_count=inter_count, union_count=union_count,
             jaccard=inter_count / union_count if union_count > 0 else 0.0,
             containment_a_in_b=inter_count / len(set_a) if set_a else 0.0,
             containment_b_in_a=inter_count / len(set_b) if set_b else 0.0,
         ))
-
     results.sort(key=lambda r: r.jaccard, reverse=True)
     return results
 
@@ -76,20 +77,12 @@ def build_overlap_matrix(
     min_confidence: float = 0.5,
 ) -> tuple[list[str], list[list[float]]]:
     """界隈×界隈のJaccard類似度マトリクスを構築"""
-    init_db()
-    session = get_session()
-    community_ids = sorted(get_all_community_ids(session))
-
-    member_sets: dict[str, set[str]] = {}
-    for cid in community_ids:
-        member_sets[cid] = get_community_member_ids(session, cid, min_confidence)
-    session.close()
-
+    member_sets = _load_member_sets(min_confidence)
+    community_ids = sorted(member_sets.keys())
     n = len(community_ids)
     matrix = [[0.0] * n for _ in range(n)]
-
     for i in range(n):
-        matrix[i][i] = 1.0  # 自分自身との重複は1.0
+        matrix[i][i] = 1.0
         for j in range(i + 1, n):
             a = member_sets[community_ids[i]]
             b = member_sets[community_ids[j]]
@@ -97,7 +90,6 @@ def build_overlap_matrix(
             jaccard = len(a & b) / len(union) if union else 0.0
             matrix[i][j] = jaccard
             matrix[j][i] = jaccard
-
     return community_ids, matrix
 
 

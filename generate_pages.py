@@ -20,8 +20,6 @@ MARKER_END = "// __REPORT_DATA_END__"
 
 
 def generate_pages(min_confidence: float = 0.5):
-    init_db()
-
     sizes = compute_all_sizes(min_confidence)
     overlaps = compute_pairwise_overlap(min_confidence)
     community_ids, matrix = build_overlap_matrix(min_confidence)

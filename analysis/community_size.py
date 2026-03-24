@@ -1,10 +1,9 @@
-"""界隈の規模メトリクス算出"""
+"""界隈の規模メトリクス算出（SQLite直接版）"""
+import sqlite3
 from dataclasses import dataclass
 from statistics import median
 
-from sqlalchemy import func
-
-from db.models import CommunityMember, User, get_session, init_db
+from config.settings import DB_PATH
 
 
 @dataclass
@@ -12,84 +11,70 @@ class SizeMetrics:
     community_id: str
     community_name: str
     member_count: int
-    active_member_count: int  # tweet_count > 0
+    active_member_count: int
     total_followers_reach: int
     median_followers: int
     influencer_count: int  # followers >= 5000
     top_influencers: list[dict]
 
 
-def compute_size(community_id: str, min_confidence: float = 0.5) -> SizeMetrics:
-    """界隈の規模メトリクスを算出"""
-    init_db()
-    session = get_session()
-
-    from db.models import Community
-    community = session.get(Community, community_id)
-    if not community:
-        raise ValueError(f"界隈 '{community_id}' が見つかりません")
-
-    # メンバー + ユーザー情報をJOIN
-    rows = (
-        session.query(User, CommunityMember.confidence)
-        .join(CommunityMember, User.user_id == CommunityMember.user_id)
-        .filter(CommunityMember.community_id == community_id)
-        .filter(CommunityMember.confidence >= min_confidence)
-        .all()
-    )
-
-    if not rows:
-        session.close()
-        return SizeMetrics(
-            community_id=community_id, community_name=community.name,
-            member_count=0, active_member_count=0,
-            total_followers_reach=0, median_followers=0,
-            influencer_count=0, top_influencers=[],
-        )
-
-    followers_list = [u.followers_count or 0 for u, _ in rows]
-    active_count = sum(1 for u, _ in rows if (u.tweet_count or 0) > 0)
-    influencer_count = sum(1 for f in followers_list if f >= 5000)
-
-    # トップインフルエンサー
-    sorted_users = sorted(rows, key=lambda x: x[0].followers_count or 0, reverse=True)
-    top = [
-        {
-            "screen_name": u.screen_name,
-            "display_name": u.display_name,
-            "followers_count": u.followers_count,
-            "bio": (u.bio or "")[:100],
-        }
-        for u, _ in sorted_users[:10]
-    ]
-
-    metrics = SizeMetrics(
-        community_id=community_id,
-        community_name=community.name,
-        member_count=len(rows),
-        active_member_count=active_count,
-        total_followers_reach=sum(followers_list),
-        median_followers=int(median(followers_list)) if followers_list else 0,
-        influencer_count=influencer_count,
-        top_influencers=top,
-    )
-
-    session.close()
-    return metrics
-
-
 def compute_all_sizes(min_confidence: float = 0.5) -> list[SizeMetrics]:
-    """全界隈の規模を算出"""
-    from db.ops import get_all_community_ids
-    init_db()
-    session = get_session()
-    community_ids = get_all_community_ids(session)
-    session.close()
+    """全界隈の規模を一括算出（SQLite直接、高速）"""
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    # 界隈名取得
+    names = {}
+    for r in conn.execute("SELECT id, name FROM communities"):
+        names[r["id"]] = r["name"]
 
     results = []
-    for cid in community_ids:
-        metrics = compute_size(cid, min_confidence)
-        results.append(metrics)
+    for cid in sorted(names.keys()):
+        # メンバー + ユーザー情報をJOIN
+        rows = conn.execute("""
+            SELECT u.screen_name, u.display_name, u.bio,
+                   COALESCE(u.followers_count, 0) as followers_count,
+                   COALESCE(u.tweet_count, 0) as tweet_count
+            FROM community_members cm
+            JOIN users u ON cm.user_id = u.user_id
+            WHERE cm.community_id = ? AND cm.confidence >= ?
+            ORDER BY u.followers_count DESC
+        """, (cid, min_confidence)).fetchall()
 
+        if not rows:
+            results.append(SizeMetrics(
+                community_id=cid, community_name=names[cid],
+                member_count=0, active_member_count=0,
+                total_followers_reach=0, median_followers=0,
+                influencer_count=0, top_influencers=[],
+            ))
+            continue
+
+        followers_list = [r["followers_count"] for r in rows]
+        active_count = sum(1 for r in rows if r["tweet_count"] > 0)
+        influencer_count = sum(1 for f in followers_list if f >= 5000)
+
+        top = [
+            {
+                "screen_name": r["screen_name"] or "",
+                "display_name": r["display_name"] or "",
+                "followers_count": r["followers_count"],
+                "bio": (r["bio"] or "")[:100],
+            }
+            for r in rows[:10]
+        ]
+
+        results.append(SizeMetrics(
+            community_id=cid,
+            community_name=names[cid],
+            member_count=len(rows),
+            active_member_count=active_count,
+            total_followers_reach=sum(followers_list),
+            median_followers=int(median(followers_list)) if followers_list else 0,
+            influencer_count=influencer_count,
+            top_influencers=top,
+        ))
+
+    conn.close()
     results.sort(key=lambda m: m.member_count, reverse=True)
     return results
