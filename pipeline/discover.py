@@ -116,6 +116,46 @@ def discover_community(community: CommunityDef):
 
         print(f"  → 検索合計: {found_count} ユーザー")
 
+    # --- Stage 1c: Playwright検索（大量発見） ---
+    pw_queries = community.hashtags[:3]  # 上位3つのハッシュタグ
+    if pw_queries:
+        try:
+            from scraping.playwright_search import search_users_sync
+            print(f"\n[Stage 1c] Playwright検索 ({len(pw_queries)} クエリ)")
+            pw_count = 0
+
+            for query in pw_queries:
+                print(f"  PW検索: {query}")
+                pw_users = search_users_sync(query, max_scroll=8)
+
+                for u in pw_users:
+                    sn = u.get("screen_name", "")
+                    bio = u.get("bio", "")
+                    if not sn:
+                        continue
+                    if _matches_exclude_patterns(bio, sn, community.exclude_patterns):
+                        continue
+
+                    bio_match = _matches_bio_patterns(bio, community.bio_patterns)
+                    confidence = 0.5 if bio_match else 0.3
+                    user_id = f"sn:{sn}"
+                    upsert_user(session, user_id, screen_name=sn, bio=bio)
+                    add_community_member(
+                        session, community.id, user_id,
+                        confidence=confidence, source="pw_search",
+                        bio_match=bio_match,
+                    )
+                    pw_count += 1
+
+                session.commit()
+                print(f"    → {len(pw_users)} ユーザー発見")
+
+            print(f"  → PW検索合計: {pw_count} ユーザー")
+        except ImportError:
+            print("  [SKIP] playwright未インストール")
+        except Exception as e:
+            print(f"  [WARN] Playwright検索失敗: {e}")
+
     session.close()
     print(f"\n[完了] {community.name} のシード解決 + 検索発見が完了しました")
     return seed_user_ids

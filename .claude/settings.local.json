@@ -17,7 +17,13 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:scrapfly.io)",
       "WebFetch(domain:x.com)",
-      "Bash(ls /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/*.json)"
+      "Bash(ls /c/Users/USERNAME/workspace/jim_auto_ws/sokusuu-ranking/data/*.json)",
+      "Bash(python scraping/playwright_search.py \"#筋トレ\")",
+      "Bash(wmic process:*)",
+      "Bash(ls -lt /c/Users/USERNAME/AppData/Local/Temp/claude/C--Users-USERNAME-workspace-jim-auto-ws-twitter-kaiwai-survey/65fe696f-1ea2-4656-98bf-3d1c05daba07/tasks/*.output)",
+      "Bash(taskkill //F //PID 571203)",
+      "Bash(tasklist)",
+      "Bash(taskkill //F //IM python.exe)"
     ]
   }
 }
