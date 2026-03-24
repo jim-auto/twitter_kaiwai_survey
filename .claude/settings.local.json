@@ -23,7 +23,12 @@
       "Bash(ls -lt /c/Users/USERNAME/AppData/Local/Temp/claude/C--Users-USERNAME-workspace-jim-auto-ws-twitter-kaiwai-survey/65fe696f-1ea2-4656-98bf-3d1c05daba07/tasks/*.output)",
       "Bash(taskkill //F //PID 571203)",
       "Bash(tasklist)",
-      "Bash(taskkill //F //IM python.exe)"
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(taskkill //F //IM pip.exe)",
+      "Bash(taskkill //F //IM pip3.exe)",
+      "Bash(taskkill //F //IM cc1plus.exe)",
+      "Bash(taskkill //F //IM gcc.exe)",
+      "Bash(taskkill //F //IM chromium.exe)"
     ]
   }
 }

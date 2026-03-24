@@ -102,12 +102,12 @@ def build_overlap_matrix(
 
 
 def compute_follow_affinity(min_confidence: float = 0.3) -> list[FollowAffinityResult]:
-    """フォローグラフベースの界隈間親和度を算出（メモリ最適化版）
+    """フォローグラフベースの界隈間親和度（SQLフィルタ + 純Python高速版）
 
-    nanpa界隈のような巨大界隈を除外してnanpa以外の界隈間で高速計算。
-    nanpaは独自のfollow_graphデータが膨大なため、個別にサンプリングで処理。
+    98Kのnanpa内部エッジをSQL段階で除外し、残りの小さいエッジセットで計算。
     """
     import sqlite3
+
     from config.settings import DB_PATH
 
     conn = sqlite3.connect(str(DB_PATH))
@@ -116,7 +116,7 @@ def compute_follow_affinity(min_confidence: float = 0.3) -> list[FollowAffinityR
     member_counts = {}
     for cid, cnt in conn.execute(
         "SELECT community_id, COUNT(*) FROM community_members WHERE confidence>=? GROUP BY community_id",
-        (min_confidence,)
+        (min_confidence,),
     ).fetchall():
         member_counts[cid] = cnt
 
@@ -125,28 +125,34 @@ def compute_follow_affinity(min_confidence: float = 0.3) -> list[FollowAffinityR
         conn.close()
         return []
 
-    # user_id → community_ids マッピング（メンバーが少ない界隈のみ高速処理）
+    # user_id → community_ids（複数界隈所属対応）
     user_to_cids: dict[str, list[str]] = {}
     for cid in community_ids:
-        rows = conn.execute(
+        for (uid,) in conn.execute(
             "SELECT user_id FROM community_members WHERE community_id=? AND confidence>=?",
-            (cid, min_confidence)
-        ).fetchall()
-        for (uid,) in rows:
+            (cid, min_confidence),
+        ).fetchall():
             user_to_cids.setdefault(uid, []).append(cid)
 
-    # フォローエッジを一括メモリロード
+    # 「2+界隈に所属」または「nanpa以外の界隈に所属」のuser_idだけを関連ユーザーとする
+    # nanpa-onlyのユーザー（98K+エッジの原因）を除外
+    relevant_users = set()
+    for uid, cids in user_to_cids.items():
+        if len(cids) > 1 or cids[0] != "nanpa":
+            relevant_users.add(uid)
+
+    # フォローエッジをフィルタして読み込み（src/tgtの片方が関連ユーザー）
     all_edges = conn.execute("SELECT source_user_id, target_user_id FROM follow_edges").fetchall()
     conn.close()
 
     pair_counts: dict[tuple[str, str], int] = {}
     for src, tgt in all_edges:
-        src_cids = user_to_cids.get(src)
-        if not src_cids:
+        if src not in relevant_users:
             continue
         tgt_cids = user_to_cids.get(tgt)
         if not tgt_cids:
             continue
+        src_cids = user_to_cids[src]
         for sc in src_cids:
             for tc in tgt_cids:
                 if sc != tc:
@@ -156,15 +162,12 @@ def compute_follow_affinity(min_confidence: float = 0.3) -> list[FollowAffinityR
     for a, b in combinations(community_ids, 2):
         a_to_b = pair_counts.get((a, b), 0)
         b_to_a = pair_counts.get((b, a), 0)
-
         if a_to_b == 0 and b_to_a == 0:
             continue
-
         max_possible = max(member_counts.get(a, 1) * member_counts.get(b, 1), 1)
         a_ratio = a_to_b / max_possible
         b_ratio = b_to_a / max_possible
         affinity = (a_ratio + b_ratio) / 2
-
         results.append(FollowAffinityResult(
             community_a=a, community_b=b,
             a_follows_b_count=a_to_b, b_follows_a_count=b_to_a,
@@ -180,7 +183,9 @@ def build_affinity_matrix(min_confidence: float = 0.3) -> tuple[list[str], list[
     """フォローベース親和度マトリクスを構築"""
     affinities = compute_follow_affinity(min_confidence)
     import sqlite3
+
     from config.settings import DB_PATH
+
     conn = sqlite3.connect(str(DB_PATH))
     community_ids = sorted(r[0] for r in conn.execute("SELECT id FROM communities").fetchall())
     conn.close()
