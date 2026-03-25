@@ -80,6 +80,15 @@ def collect_profiles(community_id):
 
 
 @cli.command()
+@click.argument("community_id", required=False)
+@click.option("--skip-seeds", is_flag=True, help="seed再解決をスキップ")
+def repair_users(community_id, skip_seeds):
+    """壊れた user 参照を補修し、プロフィールを再取得"""
+    from pipeline.repair_users import repair_users as _repair
+    _repair(community_id=community_id, rerun_seeds=not skip_seeds)
+
+
+@cli.command()
 @click.option("--confidence", "-c", default=0.5, help="最低confidence閾値")
 def analyze(confidence):
     """規模・重複を分析してレポート生成"""

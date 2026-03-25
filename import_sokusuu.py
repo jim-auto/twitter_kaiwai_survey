@@ -32,14 +32,13 @@ def import_sokusuu_data():
             username = acc.get("username", "")
             if not username:
                 continue
-            user_id = f"sn:{username}"  # screen_name based ID
-            upsert_user(session, user_id,
-                        screen_name=username,
-                        display_name=acc.get("display_name", ""),
-                        bio=acc.get("bio", ""),
-                        followers_count=acc.get("followers_count", 0),
-                        profile_image=acc.get("profile_image_url", ""))
-            add_community_member(session, "nanpa", user_id,
+            user = upsert_user(session, f"sn:{username}",
+                               screen_name=username,
+                               display_name=acc.get("display_name", ""),
+                               bio=acc.get("bio", ""),
+                               followers_count=acc.get("followers_count", 0),
+                               profile_image=acc.get("profile_image_url", ""))
+            add_community_member(session, "nanpa", user.user_id,
                                  confidence=0.8, source="import_sokusuu")
             imported += 1
 
@@ -55,15 +54,13 @@ def import_sokusuu_data():
 
         edges = 0
         for source_sn, following_list in graph.items():
-            source_id = f"sn:{source_sn}"
+            source_id = upsert_user(session, f"sn:{source_sn}", screen_name=source_sn).user_id
             # source userが存在しなければ作成
-            upsert_user(session, source_id, screen_name=source_sn)
             add_community_member(session, "nanpa", source_id,
                                  confidence=0.6, source="import_graph")
 
             for target_sn in following_list:
-                target_id = f"sn:{target_sn}"
-                upsert_user(session, target_id, screen_name=target_sn)
+                target_id = upsert_user(session, f"sn:{target_sn}", screen_name=target_sn).user_id
                 add_follow_edge(session, source_id, target_id)
                 edges += 1
 

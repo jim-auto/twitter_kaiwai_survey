@@ -32,11 +32,12 @@ def compute_all_sizes(min_confidence: float = 0.5) -> list[SizeMetrics]:
     for cid in sorted(names.keys()):
         # メンバー + ユーザー情報をJOIN
         rows = conn.execute("""
-            SELECT u.screen_name, u.display_name, u.bio,
+            SELECT cm.user_id,
+                   u.screen_name, u.display_name, u.bio,
                    COALESCE(u.followers_count, 0) as followers_count,
                    COALESCE(u.tweet_count, 0) as tweet_count
             FROM community_members cm
-            JOIN users u ON cm.user_id = u.user_id
+            LEFT JOIN users u ON cm.user_id = u.user_id
             WHERE cm.community_id = ? AND cm.confidence >= ?
             ORDER BY u.followers_count DESC
         """, (cid, min_confidence)).fetchall()

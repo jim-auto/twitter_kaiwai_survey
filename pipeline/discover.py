@@ -56,8 +56,7 @@ def discover_community(community: CommunityDef):
             print(f"  [SKIP] @{username}: 取得失敗")
             continue
 
-        user_id = user_data["rest_id"]
-        upsert_user(session, user_id, **{
+        canonical_user = upsert_user(session, user_data["rest_id"], **{
             "screen_name": user_data["screen_name"],
             "display_name": user_data["name"],
             "bio": user_data["description"],
@@ -66,6 +65,7 @@ def discover_community(community: CommunityDef):
             "tweet_count": user_data["tweet_count"],
             "profile_image": user_data["profile_image_url"],
         })
+        user_id = canonical_user.user_id
         add_community_member(
             session, community.id, user_id,
             confidence=1.0, source="seed",
@@ -95,7 +95,7 @@ def discover_community(community: CommunityDef):
                 bio_match = _matches_bio_patterns(u.get("description", ""), community.bio_patterns)
                 confidence = 0.5 if bio_match else 0.3
 
-                upsert_user(session, u["rest_id"], **{
+                canonical_user = upsert_user(session, u["rest_id"], **{
                     "screen_name": u["screen_name"],
                     "display_name": u["name"],
                     "bio": u["description"],
@@ -105,7 +105,7 @@ def discover_community(community: CommunityDef):
                     "profile_image": u.get("profile_image_url", ""),
                 })
                 add_community_member(
-                    session, community.id, u["rest_id"],
+                    session, community.id, canonical_user.user_id,
                     confidence=confidence, source="search",
                     bio_match=bio_match,
                 )
@@ -138,10 +138,9 @@ def discover_community(community: CommunityDef):
 
                     bio_match = _matches_bio_patterns(bio, community.bio_patterns)
                     confidence = 0.5 if bio_match else 0.3
-                    user_id = f"sn:{sn}"
-                    upsert_user(session, user_id, screen_name=sn, bio=bio)
+                    canonical_user = upsert_user(session, f"sn:{sn}", screen_name=sn, bio=bio)
                     add_community_member(
-                        session, community.id, user_id,
+                        session, community.id, canonical_user.user_id,
                         confidence=confidence, source="pw_search",
                         bio_match=bio_match,
                     )

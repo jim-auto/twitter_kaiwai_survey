@@ -6,9 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from analysis.clustering import detect_affinity_clusters
 from analysis.community_size import compute_all_sizes
 from analysis.overlap import (
-    build_affinity_matrix,
+    build_affinity_matrix_from_results,
     build_overlap_matrix,
     compute_follow_affinity,
     compute_pairwise_overlap,
@@ -25,7 +26,8 @@ def generate_pages(min_confidence: float = 0.5):
     community_ids, matrix = build_overlap_matrix(min_confidence)
 
     affinities = compute_follow_affinity(min_confidence=0.5)
-    affinity_ids, affinity_matrix = build_affinity_matrix(min_confidence=0.5)
+    affinity_ids, affinity_matrix = build_affinity_matrix_from_results(affinities)
+    clusters = detect_affinity_clusters(min_confidence=min_confidence)
 
     report_data = {
         "min_confidence": min_confidence,
@@ -40,6 +42,7 @@ def generate_pages(min_confidence: float = 0.5):
             "community_ids": affinity_ids,
             "matrix": affinity_matrix,
         },
+        "clusters": asdict(clusters),
     }
 
     json_str = json.dumps(report_data, ensure_ascii=False, indent=2)

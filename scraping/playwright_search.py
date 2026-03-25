@@ -4,10 +4,16 @@ import json
 import re
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from config.settings import COOKIE_DIR, USER_AGENT
 
 BLOCK_TYPES = {"image", "stylesheet", "font", "media"}
+RESERVED_PROFILE_PATHS = {
+    "account", "compose", "explore", "home", "i", "intent",
+    "login", "messages", "notifications", "privacy", "search",
+    "settings", "tos",
+}
 
 
 def _find_cookie_file() -> Path:
@@ -45,6 +51,50 @@ async def _block_resources(route):
         await route.abort()
     else:
         await route.continue_()
+
+
+def _extract_screen_name_from_url(url: str) -> Optional[str]:
+    parsed = urlparse(url)
+    if parsed.netloc not in {"x.com", "www.x.com"}:
+        return None
+
+    path = parsed.path.strip("/")
+    if not path or "/" in path or path in RESERVED_PROFILE_PATHS:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9_]{1,15}", path):
+        return None
+    return path
+
+
+async def _resolve_screen_name_from_page(page, user_id: str, timeout_ms: int) -> Optional[str]:
+    try:
+        await page.goto(
+            f"https://x.com/i/user/{user_id}",
+            wait_until="commit",
+            timeout=min(timeout_ms, 10000),
+        )
+    except Exception:
+        pass
+
+    checks = max(10, timeout_ms // 500)
+    for _ in range(checks):
+        screen_name = _extract_screen_name_from_url(page.url)
+        if screen_name:
+            return screen_name
+        try:
+            await page.wait_for_timeout(500)
+        except Exception:
+            break
+
+    try:
+        title = await page.title()
+    except Exception:
+        title = ""
+    match = re.search(r"@([A-Za-z0-9_]{1,15})", title)
+    if match:
+        return match.group(1)
+
+    return None
 
 
 async def search_users_playwright(query: str, max_scroll: int = 10) -> list[dict]:
@@ -128,6 +178,70 @@ async def search_users_playwright(query: str, max_scroll: int = 10) -> list[dict
 def search_users_sync(query: str, max_scroll: int = 10) -> list[dict]:
     """同期版ラッパー"""
     return asyncio.run(search_users_playwright(query, max_scroll))
+
+
+async def resolve_screen_names_playwright(
+    user_ids: list[str],
+    concurrency: int = 4,
+    timeout_ms: int = 30000,
+) -> dict[str, str]:
+    """rest_id から profile redirect を辿って screen_name を解決する。"""
+    from playwright.async_api import async_playwright
+
+    if not user_ids:
+        return {}
+
+    cookie_file = _find_cookie_file()
+    cookies = _load_cookies_for_playwright(cookie_file)
+    results: dict[str, str] = {}
+    queue: asyncio.Queue[str] = asyncio.Queue()
+
+    for user_id in user_ids:
+        queue.put_nowait(user_id)
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent=USER_AGENT + " (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 720},
+        )
+        await context.add_cookies(cookies)
+
+        async def worker(worker_idx: int):
+            page = await context.new_page()
+            await page.route("**/*", _block_resources)
+            processed = 0
+            try:
+                while True:
+                    try:
+                        user_id = queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+
+                    screen_name = await _resolve_screen_name_from_page(page, user_id, timeout_ms)
+                    if screen_name:
+                        results[user_id] = screen_name
+                    processed += 1
+                    if processed % 20 == 0:
+                        print(f"  [PW{worker_idx}] {processed} redirect attempts")
+            finally:
+                await page.close()
+
+        worker_count = max(1, min(concurrency, len(user_ids)))
+        await asyncio.gather(*(worker(i + 1) for i in range(worker_count)))
+        await context.close()
+        await browser.close()
+
+    return results
+
+
+def resolve_screen_names_sync(
+    user_ids: list[str],
+    concurrency: int = 4,
+    timeout_ms: int = 30000,
+) -> dict[str, str]:
+    """sync wrapper for rest_id -> screen_name resolution."""
+    return asyncio.run(resolve_screen_names_playwright(user_ids, concurrency, timeout_ms))
 
 
 if __name__ == "__main__":

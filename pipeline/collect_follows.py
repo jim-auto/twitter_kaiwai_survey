@@ -80,7 +80,7 @@ def collect_follow_graph(community: CommunityDef, max_seeds: int = 10):
                             target_user = session.query(User).filter(User.screen_name == target_sn).first()
                             target_id = target_user.user_id if target_user else f"sn:{target_sn}"
                             if not target_user:
-                                upsert_user(session, target_id, screen_name=target_sn)
+                                target_id = upsert_user(session, target_id, screen_name=target_sn).user_id
                             add_follow_edge(session, source_id, target_id)
                         session.commit()
                     print(f"  [W{wid}] done: {len(results)} accounts")

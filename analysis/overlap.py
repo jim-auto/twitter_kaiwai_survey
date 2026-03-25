@@ -171,9 +171,10 @@ def compute_follow_affinity(min_confidence: float = 0.3) -> list[FollowAffinityR
     return results
 
 
-def build_affinity_matrix(min_confidence: float = 0.3) -> tuple[list[str], list[list[float]]]:
-    """フォローベース親和度マトリクスを構築"""
-    affinities = compute_follow_affinity(min_confidence)
+def build_affinity_matrix_from_results(
+    affinities: list[FollowAffinityResult],
+) -> tuple[list[str], list[list[float]]]:
+    """既に計算済みの親和度結果からマトリクスを構築"""
     import sqlite3
 
     from config.settings import DB_PATH
@@ -196,3 +197,9 @@ def build_affinity_matrix(min_confidence: float = 0.3) -> tuple[list[str], list[
             matrix[j][i] = r.affinity
 
     return community_ids, matrix
+
+
+def build_affinity_matrix(min_confidence: float = 0.3) -> tuple[list[str], list[list[float]]]:
+    """フォローベース親和度マトリクスを構築"""
+    affinities = compute_follow_affinity(min_confidence)
+    return build_affinity_matrix_from_results(affinities)

@@ -110,6 +110,55 @@
     .influencer .bio { color: #888; font-size: 0.8em; }
     .influencer .followers { color: #1d9bf0; font-size: 0.85em; }
 
+    /* Clusters */
+    .cluster-summary {
+      display: grid; gap: 12px; margin-bottom: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .cluster-panel, .cluster-card {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+    }
+    .cluster-panel { padding: 14px 16px; }
+    .cluster-panel .eyebrow {
+      color: #888; font-size: 0.78em; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .cluster-panel .value { color: #ff6b6b; font-size: 1.5em; font-weight: 700; margin-top: 4px; }
+    .cluster-grid {
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .cluster-card { padding: 16px; }
+    .cluster-card.isolated { border-style: dashed; }
+    .cluster-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .cluster-title { font-size: 1.05em; font-weight: 700; }
+    .cluster-weight { color: #888; font-size: 0.82em; }
+    .member-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .chip {
+      display: inline-flex; align-items: center; padding: 4px 10px;
+      border: 1px solid #333; border-radius: 999px;
+      background: #141414; font-size: 0.8em;
+    }
+    .cluster-section-title {
+      color: #888; font-size: 0.78em; letter-spacing: 0.06em;
+      text-transform: uppercase; margin: 0 0 8px;
+    }
+    .rep-list { display: grid; gap: 8px; margin-bottom: 14px; }
+    .rep-item { padding: 8px 0; border-top: 1px solid #222; }
+    .rep-item:first-child { border-top: 0; padding-top: 0; }
+    .rep-name a { color: #1d9bf0; text-decoration: none; font-weight: 600; }
+    .rep-name a:hover { text-decoration: underline; }
+    .rep-meta { color: #888; font-size: 0.8em; margin-top: 2px; }
+    .cluster-links { display: grid; gap: 8px; }
+    .cluster-link-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      font-size: 0.85em; color: #d8d8d8;
+      padding-top: 8px; border-top: 1px solid #222;
+    }
+    .cluster-empty { color: #666; font-size: 0.85em; }
+
     /* Status banner */
     .status-banner {
       text-align: center; padding: 40px 20px; color: #666;
@@ -145,14 +194,15 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('size')">界隈規模</div>
-    <div class="tab" onclick="switchTab('overlap')">重複マトリクス</div>
-    <div class="tab" onclick="switchTab('chart')">規模チャート</div>
-    <div class="tab" onclick="switchTab('influencers')">インフルエンサー</div>
-    <div class="tab" onclick="switchTab('details')">重複詳細</div>
-    <div class="tab" onclick="switchTab('affinity')">フォロー親和度</div>
-    <div class="tab" onclick="switchTab('affmatrix')">親和度マトリクス</div>
-    <div class="tab" onclick="switchTab('network')">ネットワーク</div>
+    <div class="tab active" onclick="switchTab(event, 'size')">界隈規模</div>
+    <div class="tab" onclick="switchTab(event, 'overlap')">重複マトリクス</div>
+    <div class="tab" onclick="switchTab(event, 'chart')">規模チャート</div>
+    <div class="tab" onclick="switchTab(event, 'influencers')">インフルエンサー</div>
+    <div class="tab" onclick="switchTab(event, 'details')">重複詳細</div>
+    <div class="tab" onclick="switchTab(event, 'affinity')">フォロー親和度</div>
+    <div class="tab" onclick="switchTab(event, 'affmatrix')">親和度マトリクス</div>
+    <div class="tab" onclick="switchTab(event, 'clusters')">クラスタ</div>
+    <div class="tab" onclick="switchTab(event, 'network')">ネットワーク</div>
   </div>
 
   <!-- Tab: 界隈規模 -->
@@ -234,6 +284,13 @@
     </div>
   </div>
 
+  <!-- Tab: クラスタ -->
+  <div class="tab-content" id="tab-clusters">
+    <p style="color:#888;margin-bottom:12px;">フォロー親和度から抽出した界隈クラスタ。弱い結線はノイズとして除外し、孤立界隈は単独表示しています。</p>
+    <div class="cluster-summary" id="cluster-summary"></div>
+    <div class="cluster-grid" id="cluster-list"></div>
+  </div>
+
   <!-- Tab: ネットワークグラフ -->
   <div class="tab-content" id="tab-network">
     <p style="color:#888;margin-bottom:12px;">界隈間のフォロー親和度をネットワークで可視化。ノードサイズ=メンバー数、エッジの太さ=親和度。</p>
@@ -269,22 +326,28 @@ const REPORT_DATA = {
     {
       "community_id": "nanpa",
       "community_name": "ナンパ界隈",
-      "member_count": 693,
-      "active_member_count": 23,
-      "total_followers_reach": 952761,
-      "median_followers": 123,
-      "influencer_count": 40,
+      "member_count": 695,
+      "active_member_count": 25,
+      "total_followers_reach": 1190300,
+      "median_followers": 124,
+      "influencer_count": 42,
       "top_influencers": [
+        {
+          "screen_name": "kazu_fujisawa",
+          "display_name": "kazu_fujisawa",
+          "followers_count": 206443,
+          "bio": "藤沢数希 (pen name) | PhD in physics → IB quant/trader (Tokyo) → bestselling author in Japan → investor "
+        },
         {
           "screen_name": "nanpasireiji",
           "display_name": "nanpasireiji",
-          "followers_count": 40734,
+          "followers_count": 40725,
           "bio": "モテを科学すれば、度胸はいらない。引きこもり→公園でおばあちゃんと話す活動でコミュ障を克服→ナンパに通ずることに気づく→15年かけてデータ蓄積、技術を確立→6000人受講、1600人直接指導｜書籍6万"
         },
         {
           "screen_name": "osugi_pua",
           "display_name": "osugi_pua",
-          "followers_count": 38829,
+          "followers_count": 38821,
           "bio": "https://t.co/6IKEFKdTpI"
         },
         {
@@ -292,6 +355,12 @@ const REPORT_DATA = {
           "display_name": "nonchama0721",
           "followers_count": 32942,
           "bio": "ストリートナンパのプロ｜ナンパ界隈で最もnoteのフォロワーが多い人（累計4,643人）｜note累計20,000部販売｜週刊SPA！2022年8月掲載"
+        },
+        {
+          "screen_name": "tenchosan35",
+          "display_name": "tenchosan35",
+          "followers_count": 31010,
+          "bio": "転売ウマウマブログの転売店長だよ＾＾"
         },
         {
           "screen_name": "tinder_ban",
@@ -322,18 +391,6 @@ const REPORT_DATA = {
           "display_name": "あつ代表",
           "followers_count": 25841,
           "bio": "累計1198即/モテイエ不動産代表→@palace_chilll"
-        },
-        {
-          "screen_name": "karasu_pua",
-          "display_name": "からすまる",
-          "followers_count": 21822,
-          "bio": "800人斬り、2児の父"
-        },
-        {
-          "screen_name": "fumiki_mka",
-          "display_name": "fumiki / 恋愛塾",
-          "followers_count": 21500,
-          "bio": "経験人数700over｜デート1000人超え｜ 男磨き12年｜『フォローするだけで\"最短モテ男磨き\"が理解できる』｜「美女攻略・デート代全奢られ・外車3台プレゼント」｜「身一つでモテる・経済的な自由・"
         }
       ]
     },
@@ -342,20 +399,20 @@ const REPORT_DATA = {
       "community_name": "占い・スピリチュアル界隈",
       "member_count": 60,
       "active_member_count": 60,
-      "total_followers_reach": 2632331,
+      "total_followers_reach": 2632233,
       "median_followers": 11737,
       "influencer_count": 44,
       "top_influencers": [
         {
           "screen_name": "shiitake7919",
           "display_name": "shiitake7919",
-          "followers_count": 765819,
+          "followers_count": 765718,
           "bio": "しいたけ占いのしいたけ.です。 占いとかやってます。noteで月間の星座占いやコラムも書いています。インスタも同じ名前でやってます🍄\n\n「しいたけ占い公式サイト」はこちら\nhttps://t.co/F"
         },
         {
           "screen_name": "getters_iida",
           "display_name": "getters_iida",
-          "followers_count": 594071,
+          "followers_count": 594081,
           "bio": "２９年間で約８万人無料、無償で占っています。占って欲しい方は偶然出会った時に話しかけてください。\n 携帯サイト『ゲッターズ飯田流 五星三心占い』 で毎日２名の方を音声で占っています。応募は、何回でも何"
         },
         {
@@ -391,7 +448,7 @@ const REPORT_DATA = {
         {
           "screen_name": "Suisho_Tamako",
           "display_name": "Suisho_Tamako",
-          "followers_count": 62147,
+          "followers_count": 62140,
           "bio": "東洋西洋の枠を超えて占術を研究する水晶玉子公式アカウント★オリエンタル占星術https://t.co/hkIZZPZbk9 ★マンダリン占星術https://t.co/8nIHZ75PVh ★新ペルシ"
         },
         {
@@ -403,7 +460,7 @@ const REPORT_DATA = {
         {
           "screen_name": "makiakari",
           "display_name": "makiakari",
-          "followers_count": 56529,
+          "followers_count": 56535,
           "bio": "占い師。静岡生まれ・X JAPAN育ち/占星術、タロット等、雑誌やWebで鑑定・執筆/SPUR/SPRiNG/LEE/幻冬舎plus/マイナビ/VOGUE/mi-mollet/SBSラジオ「IPPO」"
         }
       ]
@@ -413,20 +470,20 @@ const REPORT_DATA = {
       "community_name": "美容界隈",
       "member_count": 58,
       "active_member_count": 55,
-      "total_followers_reach": 3396911,
+      "total_followers_reach": 3417042,
       "median_followers": 13330,
       "influencer_count": 32,
       "top_influencers": [
         {
           "screen_name": "marunouchi__ol_",
           "display_name": "marunouchi__ol_",
-          "followers_count": 684789,
+          "followers_count": 704827,
           "bio": "宵越しの銭は持たない美容垢。いつもドラストか百貨店にいます。成分解説と全色レビューが好き。化粧品検定1級。📫marunouchi.ol.official@gmail.com"
         },
         {
           "screen_name": "skstibnni",
           "display_name": "skstibnni",
-          "followers_count": 233406,
+          "followers_count": 233539,
           "bio": "洋服、コスメ、美容が好きです。"
         },
         {
@@ -438,7 +495,7 @@ const REPORT_DATA = {
         {
           "screen_name": "mrmrmron7",
           "display_name": "mrmrmron7",
-          "followers_count": 182665,
+          "followers_count": 182655,
           "bio": "働くOLの美容記録｜乾燥・敏感・薄肌向け｜時々美味しいもの｜sub：@rmrmrmon7 ｜ ✉︎：mrmrmron7@gmail.com"
         },
         {
@@ -462,7 +519,7 @@ const REPORT_DATA = {
         {
           "screen_name": "chicoecco",
           "display_name": "chicoecco",
-          "followers_count": 140875,
+          "followers_count": 140852,
           "bio": "もっとコスメが好きになる、もっとメイクが楽しくなる\"実用的かつ夢がある\"メイク法や化粧品を発信するメイクレシピプランナー。推しメイクと持ち歩けるメンカラアイテム収集が好き。📬仕事依頼➡︎chicoec"
         },
         {
@@ -484,8 +541,8 @@ const REPORT_DATA = {
       "community_name": "仮想通貨・Web3界隈",
       "member_count": 57,
       "active_member_count": 57,
-      "total_followers_reach": 10989961,
-      "median_followers": 44754,
+      "total_followers_reach": 10990026,
+      "median_followers": 44747,
       "influencer_count": 42,
       "top_influencers": [
         {
@@ -521,7 +578,7 @@ const REPORT_DATA = {
         {
           "screen_name": "IHayato",
           "display_name": "IHayato",
-          "followers_count": 497340,
+          "followers_count": 497376,
           "bio": "テレビアニメとAIアニメ作ってます。ポッドキャストもやってます。TVアニメ「クリプトニンジャ咲耶」、新作TCG「CNPトレカ」よろしくです！3万人が読む無料メルマガ「穿石（せんせき）」→https:/"
         },
         {
@@ -551,14 +608,91 @@ const REPORT_DATA = {
       ]
     },
     {
+      "community_id": "anime",
+      "community_name": "アニメ・漫画界隈",
+      "member_count": 56,
+      "active_member_count": 53,
+      "total_followers_reach": 33089592,
+      "median_followers": 85152,
+      "influencer_count": 40,
+      "top_influencers": [
+        {
+          "screen_name": "Un4v5s8bgsVk9Xp",
+          "display_name": "Un4v5s8bgsVk9Xp",
+          "followers_count": 3568185,
+          "bio": "公式( )です。 主に原稿の 進捗状況を お伝えしていきます。"
+        },
+        {
+          "screen_name": "horikoshiko",
+          "display_name": "horikoshiko",
+          "followers_count": 3253164,
+          "bio": "僕のヒーローアカデミアという少年漫画を描いています。よろしくお願いします。"
+        },
+        {
+          "screen_name": "hanae0626",
+          "display_name": "hanae0626",
+          "followers_count": 2226481,
+          "bio": "猫botです。（声優）"
+        },
+        {
+          "screen_name": "nakamuraFF11",
+          "display_name": "nakamuraFF11",
+          "followers_count": 2166712,
+          "bio": "わしゃがなTV:https://t.co/pZ2pbXU438 Instagram: https://t.co/5PEUoL4rOs"
+        },
+        {
+          "screen_name": "sugitaLOV",
+          "display_name": "sugitaLOV",
+          "followers_count": 2039686,
+          "bio": "投稿された文章、画像の転載は禁止です"
+        },
+        {
+          "screen_name": "animejujutsu",
+          "display_name": "animejujutsu",
+          "followers_count": 2019857,
+          "bio": "アニメ『呪術廻戦』公式X｜第3期「#死滅回游 前編」毎週木曜深夜0時26分（24時26分）〜MBS/TBS系28局にて全国同時放送中!!｜推奨ハッシュタグ：#呪術廻戦 #劇場版呪術廻戦0 ※原則個別リ"
+        },
+        {
+          "screen_name": "animehaikyu_com",
+          "display_name": "animehaikyu_com",
+          "followers_count": 1909939,
+          "bio": "アニメ「#ハイキュー!!」の公式アカウントです。『劇場版ハイキュー!! ＃VS小さな巨人』制作決定、スペシャルアニメ「ハイキュー!! #バケモノたちの行くところ」2027年試合開始！｜#hq_anim"
+        },
+        {
+          "screen_name": "heroaca_anime",
+          "display_name": "heroaca_anime",
+          "followers_count": 1543537,
+          "bio": "原作:堀越耕平(集英社 ジャンプコミックス 刊)によるアニメ「僕のヒーローアカデミア」の公式アカウント。更に向こうへ! PLUS ULTRA!! 推奨ハッシュタグ：#heroaca_a #ヒロアカ ※"
+        },
+        {
+          "screen_name": "ono_kensho",
+          "display_name": "ono_kensho",
+          "followers_count": 1516751,
+          "bio": "小野賢章、役者、雲水、ますます伊予市ふるさと観光大使 https://t.co/qNHalhCIA8"
+        },
+        {
+          "screen_name": "spyfamily_anime",
+          "display_name": "spyfamily_anime",
+          "followers_count": 1476174,
+          "bio": "TVアニメSeason 1〜3 各プラットフォームにて配信中！原作：遠藤達哉／監督：今井友紀子／キャラクターデザイン：嶋田和晃／音楽プロデュース：(K)NoW_NAME／制作：WIT STUDIO×C"
+        }
+      ]
+    },
+    {
       "community_id": "food",
       "community_name": "料理・グルメ界隈",
-      "member_count": 47,
-      "active_member_count": 46,
-      "total_followers_reach": 13664970,
-      "median_followers": 44313,
-      "influencer_count": 43,
+      "member_count": 50,
+      "active_member_count": 49,
+      "total_followers_reach": 16983363,
+      "median_followers": 59857,
+      "influencer_count": 46,
       "top_influencers": [
+        {
+          "screen_name": "ore825",
+          "display_name": "ore825",
+          "followers_count": 2970142,
+          "bio": "料理研究家/株式会社バズレシピ代表取締役 YouTube登録540万人 Instagram登録220万人  公式LINE登録31万人 TikTok登録69万 総フォロワー約1140万人 レシピ本大賞受"
+        },
         {
           "screen_name": "muni_gurume",
           "display_name": "muni_gurume",
@@ -568,7 +702,7 @@ const REPORT_DATA = {
         {
           "screen_name": "syunkon0507",
           "display_name": "syunkon0507",
-          "followers_count": 1573172,
+          "followers_count": 1574283,
           "bio": "料理コラムニスト(先生じゃないで)青バッチですが無課金で収益化とか一切してないです。著書「syunkonカフェごはん」1～8他(累計800万部)エッセイ本「おしゃべりな人見知り」  インスタグラムht"
         },
         {
@@ -580,7 +714,7 @@ const REPORT_DATA = {
         {
           "screen_name": "marumi_kitchen",
           "display_name": "marumi_kitchen",
-          "followers_count": 1060526,
+          "followers_count": 1060455,
           "bio": "【歴代初の二冠達成】レシピ本大賞2023&2024年度受賞『やる気1%ごはん&作りおき』シリーズ累計80万部突破！ 中京テレビ『クッキンぐ〜たくさん』のムキムキ料理人💪SNS総フォロワー数365万人突"
         },
         {
@@ -598,7 +732,7 @@ const REPORT_DATA = {
         {
           "screen_name": "mariegohan",
           "display_name": "mariegohan",
-          "followers_count": 717957,
+          "followers_count": 718166,
           "bio": "10分で作れる簡単すぐうまレシピ｜若菜まりえ｜時短料理研究家｜節約できるシンプルレシピの達人｜フォローするとお金と時間が貯まるレシピが届きます｜レンジ＆トースターで10分おやつ｜たんぱく質と鉄分がとれ"
         },
         {
@@ -612,23 +746,88 @@ const REPORT_DATA = {
           "display_name": "igarashi_yukari",
           "followers_count": 549468,
           "bio": "管理栄養士・料理研究家。スイーツブランドtoroa（@toroa_kutsurogi ）とろ生ガトーショコラ、とろ生チーズケーキ、トロバタ、toroaTea商品開発。 お仕事はレシピ開発、商品開発等▼"
+        }
+      ]
+    },
+    {
+      "community_id": "gaming",
+      "community_name": "ゲーム界隈",
+      "member_count": 47,
+      "active_member_count": 47,
+      "total_followers_reach": 10171710,
+      "median_followers": 35635,
+      "influencer_count": 35,
+      "top_influencers": [
+        {
+          "screen_name": "PlayApex",
+          "display_name": "PlayApex",
+          "followers_count": 3990089,
+          "bio": "Break through in Apex Legends: Breach\n\nLive service updates: @ApexLiveComms"
         },
         {
-          "screen_name": "DelishKitchentv",
-          "display_name": "DelishKitchentv",
-          "followers_count": 531355,
-          "bio": "誰でもおいしく作れる【簡単・時短レシピ】を毎日投稿！"
+          "screen_name": "unkochan1234567",
+          "display_name": "unkochan1234567",
+          "followers_count": 918334,
+          "bio": "やぁ！"
+        },
+        {
+          "screen_name": "avashaka",
+          "display_name": "avashaka",
+          "followers_count": 824491,
+          "bio": "毎日配信https://t.co/FZKWYTxc48 お仕事の連絡はこちら→ \n info@shakakintv.jp"
+        },
+        {
+          "screen_name": "VodkaChaso",
+          "display_name": "VodkaChaso",
+          "followers_count": 784917,
+          "bio": "founder @riddleorder l https://t.co/VUrfPrJy7H えぺ祭り最下位 | 犬垢 @amuvdk1006\n\nお仕事はこちらにお願いします。\nvodkavdkcha"
+        },
+        {
+          "screen_name": "Ras9915",
+          "display_name": "Ras9915",
+          "followers_count": 756909,
+          "bio": "よろしく！\nteam : @crazyRaccoon406\nFanArt #ilRastration \nhttps://t.co/0mxQNS6pjS"
+        },
+        {
+          "screen_name": "stylishnoob",
+          "display_name": "stylishnoob",
+          "followers_count": 596109,
+          "bio": "@sekikekeke 猫垢。"
+        },
+        {
+          "screen_name": "ApexLegendsWiki",
+          "display_name": "ApexLegendsWiki",
+          "followers_count": 552135,
+          "bio": "Apex Legendsの最新アプデ内容や話題のニュース、情報などをツイートします📢  気軽にフォローして下さい😄 #エーペックスレジェンズ 　お問い合わせは　https://t.co/YoCR7Ti"
+        },
+        {
+          "screen_name": "daigothebeastJP",
+          "display_name": "daigothebeastJP",
+          "followers_count": 262023,
+          "bio": "プロゲーマー | @RedBullGamingJP @hitboxarcade @rc_reject\n\n配信アカウント: https://t.co/3T5kxmcEVC  \nEnglish: @Dai"
+        },
+        {
+          "screen_name": "PlayApexEsports",
+          "display_name": "PlayApexEsports",
+          "followers_count": 241793,
+          "bio": "The official account for @PlayApex Esports 🏆\nSign up for year 6 now 👇"
+        },
+        {
+          "screen_name": "tokidoki77",
+          "display_name": "tokidoki77",
+          "followers_count": 196894,
+          "bio": "Pro Gamer sponsored by Hit Box. REJECT所属プロゲーマー。業務連絡: management@cellorb.jp"
         }
       ]
     },
     {
       "community_id": "sedori",
       "community_name": "副業・物販界隈",
-      "member_count": 45,
-      "active_member_count": 45,
-      "total_followers_reach": 845413,
-      "median_followers": 6744,
-      "influencer_count": 28,
+      "member_count": 46,
+      "active_member_count": 46,
+      "total_followers_reach": 878706,
+      "median_followers": 7110,
+      "influencer_count": 29,
       "top_influencers": [
         {
           "screen_name": "nijisanji_goods",
@@ -693,85 +892,97 @@ const REPORT_DATA = {
       ]
     },
     {
-      "community_id": "anime",
-      "community_name": "アニメ・漫画界隈",
+      "community_id": "vtuber",
+      "community_name": "VTuber界隈",
       "member_count": 44,
-      "active_member_count": 41,
-      "total_followers_reach": 18655853,
-      "median_followers": 29129,
-      "influencer_count": 28,
+      "active_member_count": 42,
+      "total_followers_reach": 29533742,
+      "median_followers": 457412,
+      "influencer_count": 34,
       "top_influencers": [
         {
-          "screen_name": "hanae0626",
-          "display_name": "hanae0626",
-          "followers_count": 2226430,
-          "bio": "猫botです。（声優）"
+          "screen_name": "nijisanji_app",
+          "display_name": "nijisanji_app",
+          "followers_count": 2038935,
+          "bio": "VTuber / バーチャルライバーグループ「にじさんじ」の公式アカウントです！🌈🕒にじさんじの配信やイベント、グッズなどの最新情報をお届けします。個性溢れるにじさんじライバーをぜひ応援してください！"
         },
         {
-          "screen_name": "nakamuraFF11",
-          "display_name": "nakamuraFF11",
-          "followers_count": 2166610,
-          "bio": "わしゃがなTV:https://t.co/pZ2pbXU438 Instagram: https://t.co/5PEUoL4rOs"
+          "screen_name": "houshoumarine",
+          "display_name": "houshoumarine",
+          "followers_count": 1975695,
+          "bio": "hololive houshou marine/【ファンネーム】宝鐘の一味/【生放送タグ】#マリン航海記/【切り抜き動画タグ】#わかるマリン/【ファンアート】#マリンのお宝/おかあさん💘 @Akasa"
         },
         {
-          "screen_name": "sugitaLOV",
-          "display_name": "sugitaLOV",
-          "followers_count": 2039469,
-          "bio": "投稿された文章、画像の転載は禁止です"
+          "screen_name": "suisei_hosimati",
+          "display_name": "suisei_hosimati",
+          "followers_count": 1851492,
+          "bio": "Studio STELLAR/ホロライブ所属のバーチャルアイドル星街すいせいですhttps://t.co/ERQ7IldroG ◆ FA▶ #ほしまちぎゃらりー 放送タグ▶ #ほしまちすたじお ファン"
         },
         {
-          "screen_name": "animehaikyu_com",
-          "display_name": "animehaikyu_com",
-          "followers_count": 1909939,
-          "bio": "アニメ「#ハイキュー!!」の公式アカウントです。『劇場版ハイキュー!! ＃VS小さな巨人』制作決定、スペシャルアニメ「ハイキュー!! #バケモノたちの行くところ」2027年試合開始！｜#hq_anim"
+          "screen_name": "usadapekora",
+          "display_name": "usadapekora",
+          "followers_count": 1791156,
+          "bio": "ホロライブ所属のうさ耳ぺこぺこ娘 兎田ぺこらぺこ！ 🎀#野うさぎ同盟 ▶️#ぺこらいぶ 🎨#ぺこらーと ✂️#ひとくちぺこら 🥕はぐれマッマ（@yuukihagure）"
         },
         {
-          "screen_name": "heroaca_anime",
-          "display_name": "heroaca_anime",
-          "followers_count": 1543537,
-          "bio": "原作:堀越耕平(集英社 ジャンプコミックス 刊)によるアニメ「僕のヒーローアカデミア」の公式アカウント。更に向こうへ! PLUS ULTRA!! 推奨ハッシュタグ：#heroaca_a #ヒロアカ ※"
+          "screen_name": "Vamp_Kuzu",
+          "display_name": "Vamp_Kuzu",
+          "followers_count": 1772001,
+          "bio": "大金持ちのヒモになりたいVtuber 葛葉 ( くずは ) です。 養ってくれる石油王探してます。┆#KuzuVtuber ┆サブ垢 @Vllexceed┆official HP https://t."
         },
         {
-          "screen_name": "spyfamily_anime",
-          "display_name": "spyfamily_anime",
-          "followers_count": 1476174,
-          "bio": "TVアニメSeason 1〜3 各プラットフォームにて配信中！原作：遠藤達哉／監督：今井友紀子／キャラクターデザイン：嶋田和晃／音楽プロデュース：(K)NoW_NAME／制作：WIT STUDIO×C"
+          "screen_name": "minatoaqua",
+          "display_name": "minatoaqua",
+          "followers_count": 1748792,
+          "bio": "ホロライブ所属伝説のアイドルゲーマーメイド⚓️湊あくあ(みなとあくあ)です！ 極度のゲーマー🎮💕歌うのが大好き🎼🎶 私のぱっぱ( @umaiyo_puyoman ) ﾊｯｼｭﾀｸﾞ #湊あくあ #あく"
         },
         {
-          "screen_name": "Ayana_take",
-          "display_name": "Ayana_take",
-          "followers_count": 1365437,
-          "bio": "声優、竹達彩奈公式Twitterアカウント。 のんびり呟いています。インスタはこちらから→https://t.co/NX4H9Nkzaq"
+          "screen_name": "hololivetv",
+          "display_name": "hololivetv",
+          "followers_count": 1707650,
+          "bio": "「ホロライブ」「ホロスターズ」を運営する「ホロライブプロダクション」の公式アカウント。\n\n■公式サイト　　　 ：https://t.co/gUrm5D6ct3 \n■配信スケジュール ：https://"
         },
         {
-          "screen_name": "anipoke_PR",
-          "display_name": "anipoke_PR",
-          "followers_count": 1033964,
-          "bio": "アニメ「ポケットモンスター」の公式アカウントです。\nアニポケに関するさまざまな情報を発信します⚡️\n毎週金曜よる6時55分からテレビ東京系にて放送中📺\n※一部地域では放送日時が異なります #アニポケ"
+          "screen_name": "amanekanatach",
+          "display_name": "amanekanatach",
+          "followers_count": 1536654,
+          "bio": "ホロライブ所属VTuber、天音かなたです💫\n最新情報はハイライト欄と #たそじゅーる \nサブアカ @subtasochan\n\n💙おしおママ(@oshioshio_info) \n🖼#かなたーと 💬#天"
         },
         {
-          "screen_name": "anime_jojo",
-          "display_name": "anime_jojo",
-          "followers_count": 1024024,
-          "bio": "◆『ジョジョの奇妙な冒険』アニメーションシリーズ公式Xアカウント◆アニメ『スティール・ボール・ラン ジョジョの奇妙な冒険』1st STAGE Netflixにて世界独占先行配信中！！◆ #jojo_a"
+          "screen_name": "Kanae_2434",
+          "display_name": "Kanae_2434",
+          "followers_count": 1464898,
+          "bio": "奇跡を味わい尽くそう。 #ロジクールG公認サポーター"
         },
         {
-          "screen_name": "sao_anime",
-          "display_name": "sao_anime",
-          "followers_count": 1012518,
-          "bio": "アニメ「ソードアート ・オンライン」公式アカウントです。完全新作劇場版制作決定！ 推奨ハッシュタグ #sao_anime"
+          "screen_name": "nakiriayame",
+          "display_name": "nakiriayame",
+          "followers_count": 1382239,
+          "bio": "ホロライブ2期生 百鬼あやめ (なきり あやめ)😈 ￤生放送ﾀｸﾞ ＃百鬼あやめch ￤ﾌｧﾝｱｰﾄ ＃百鬼絵巻 (※活動で使用する場合があります！) ￤ﾎﾞｲｽ感想 #百鬼ボイス￤サブ垢@YODAY"
         }
       ]
     },
     {
       "community_id": "host",
       "community_name": "ホスト界隈",
-      "member_count": 40,
-      "active_member_count": 40,
-      "total_followers_reach": 513842,
-      "median_followers": 6558,
-      "influencer_count": 23,
+      "member_count": 42,
+      "active_member_count": 42,
+      "total_followers_reach": 1622064,
+      "median_followers": 7436,
+      "influencer_count": 25,
       "top_influencers": [
+        {
+          "screen_name": "roland_0fficial",
+          "display_name": "roland_0fficial",
+          "followers_count": 1016004,
+          "bio": "【 世の中には2種類の男しかいない。俺か、俺以外か】 ※アカウントは全てマネジメント事務所の管理となっておりDMやコメント等へのご返信は一切行っておりませんのでご了承ください"
+        },
+        {
+          "screen_name": "ouran_20th",
+          "display_name": "ouran_20th",
+          "followers_count": 92205,
+          "bio": "TVアニメ「桜蘭高校ホスト部」放送20周年☆彡\n期間限定でアニメ関連情報をお届けします！\n原作：葉鳥ビスコ（白泉社・LaLa）\n#桜蘭高校ホスト部"
+        },
         {
           "screen_name": "ebuhosu_anime",
           "display_name": "ebuhosu_anime",
@@ -793,7 +1004,7 @@ const REPORT_DATA = {
         {
           "screen_name": "fgr118",
           "display_name": "fgr118",
-          "followers_count": 27724,
+          "followers_count": 27736,
           "bio": "歌舞伎町を中心に大阪、名古屋、札幌に全国展開する『冬月グループ』の公式アカウント✨ホストの常識を超えて、様々な分野で活躍する総合エンターテイメントグループ🌟#時代はフユツキ"
         },
         {
@@ -811,7 +1022,7 @@ const REPORT_DATA = {
         {
           "screen_name": "groupdandy",
           "display_name": "groupdandy",
-          "followers_count": 26793,
+          "followers_count": 26800,
           "bio": "歌舞伎町を中心に展開しているホストクラブグループgroupdandyの公式アカウントです。 『そこに「笑顔」と「LOVE」はあるか。』がスローガンです。愛称は #グルダン"
         },
         {
@@ -819,34 +1030,28 @@ const REPORT_DATA = {
           "display_name": "chiwawa_sasaki",
           "followers_count": 25927,
           "bio": "ライター、慶應SFC卒。歌舞伎町の社会学を研究しています。著書『「ぴえん」という病』『歌舞伎町モラトリアム』『オーバードーズな人たち』『歌舞伎町に沼る若者たち』メディア出演多数 ✉️sasakinan"
-        },
-        {
-          "screen_name": "Maidevi_concafe",
-          "display_name": "Maidevi_concafe",
-          "followers_count": 22939,
-          "bio": "「アイドル」がコンセプトの新宿歌舞伎町No.1顔ラン店⟡.· 🎀営業時間19:00~25:00(LO.24:15)🎀キャストのフォロワー総数200万人超の有名店！アイドルやインフルエンサー多数在籍💗プ"
-        },
-        {
-          "screen_name": "natsukishibuya",
-          "display_name": "natsukishibuya",
-          "followers_count": 21575,
-          "bio": ""
         }
       ]
     },
     {
       "community_id": "idol",
       "community_name": "アイドル界隈",
-      "member_count": 37,
-      "active_member_count": 37,
-      "total_followers_reach": 9768240,
-      "median_followers": 39190,
-      "influencer_count": 25,
+      "member_count": 40,
+      "active_member_count": 40,
+      "total_followers_reach": 13101942,
+      "median_followers": 87972,
+      "influencer_count": 28,
       "top_influencers": [
+        {
+          "screen_name": "345__chan",
+          "display_name": "345__chan",
+          "followers_count": 3127896,
+          "bio": "https://t.co/XsbHCMbgxE 🏃‍♂️https://t.co/FbRPAshfuv"
+        },
         {
           "screen_name": "nogizaka46",
           "display_name": "nogizaka46",
-          "followers_count": 2048252,
+          "followers_count": 2048159,
           "bio": "#乃木坂46 の公式Xアカウントです！最新シングル「最後に階段を駆け上がったのはいつだ？」は4月8日(水)発売！ https://t.co/6OAE3RqoZ3"
         },
         {
@@ -858,7 +1063,7 @@ const REPORT_DATA = {
         {
           "screen_name": "hinatazaka46",
           "display_name": "hinatazaka46",
-          "followers_count": 803858,
+          "followers_count": 803897,
           "bio": "秋元康総合プロデュース。 けやき坂46から日向坂46に改名。16thシングル「クリフハンガー」 が2026年1月28日(水) に発売☀️"
         },
         {
@@ -896,105 +1101,176 @@ const REPORT_DATA = {
           "display_name": "nogizaka_goods",
           "followers_count": 430394,
           "bio": "乃木坂46オフィシャルグッズ公式Xアカウントです。\n乃木坂46のグッズに関する様々な情報を提供しています。\n\n#乃木坂46グッズ"
-        },
-        {
-          "screen_name": "imas_CGofficial",
-          "display_name": "imas_CGofficial",
-          "followers_count": 347088,
-          "bio": "『アイドルマスター シンデレラガールズ』に関する総合情報を\nプロデューサーの皆様にお届けします！\n\n※個別のメッセージには返答できかねますので予めご了承ください。\n\nハッシュタグ： #デレマス\nゲーム"
         }
       ]
     },
     {
-      "community_id": "gaming",
-      "community_name": "ゲーム界隈",
-      "member_count": 36,
-      "active_member_count": 36,
-      "total_followers_reach": 1211739,
-      "median_followers": 21798,
-      "influencer_count": 24,
+      "community_id": "muscle",
+      "community_name": "筋トレ界隈",
+      "member_count": 40,
+      "active_member_count": 40,
+      "total_followers_reach": 4393067,
+      "median_followers": 17139,
+      "influencer_count": 26,
       "top_influencers": [
         {
-          "screen_name": "PlayApexEsports",
-          "display_name": "PlayApexEsports",
-          "followers_count": 241793,
-          "bio": "The official account for @PlayApex Esports 🏆\nSign up for year 6 now 👇"
+          "screen_name": "badassceo",
+          "display_name": "badassceo",
+          "followers_count": 2095510,
+          "bio": "筋肉教開祖 OWN.創始者　アンビークCPO"
         },
         {
-          "screen_name": "eBASEBALL_Pro",
-          "display_name": "eBASEBALL_Pro",
-          "followers_count": 120356,
-          "bio": "#プロスピA や #WBSCパワプロ に関連するeスポーツ情報を中心に配信！ \n#スピリーグ #スピチャン #ダルチャレ #eBaseball™ #パワプロ\n\nお問合せ：https://t.co/2I"
+          "screen_name": "kinnikun0917",
+          "display_name": "kinnikun0917",
+          "followers_count": 567914,
+          "bio": "どーもー、なかやまきんに君です。公式HPがリニューアルされました。 ザ・プロテイン、POWERアパレル、イベント出演最新情報などご覧頂けます。お仕事のご依頼も下記の新ホームページの「お問い合わせ」から"
         },
         {
-          "screen_name": "edion_esports",
-          "display_name": "edion_esports",
-          "followers_count": 101752,
-          "bio": "エディオンのeスポーツ情報発信アカウントです。\nエディオンがスポンサーしているDetonatioN FocusMeの情報や、eスポーツに関するイベント情報もお届けします。お問い合わせについては公式サイ"
+          "screen_name": "greatsaiyaman02",
+          "display_name": "greatsaiyaman02",
+          "followers_count": 217043,
+          "bio": "ぜってーデカくなる！！！！　　　　　　　　　筋肉YouTuber！！ アパレルOVER WORK→ https://t.co/34v0ifktOP"
         },
         {
-          "screen_name": "_ApexStatus",
-          "display_name": "_ApexStatus",
-          "followers_count": 97485,
-          "bio": "Apex Legends server status, stats & tools on https://t.co/XH7MtGWiCM\n\nNot affiliated with @EA or @Re"
+          "screen_name": "YokokawaNaotaka",
+          "display_name": "YokokawaNaotaka",
+          "followers_count": 211525,
+          "bio": "どうも筋肉です。ホリプロ所属。筋肉になりたいです。 プロテインを愛しプロテインに愛されプロテインに呪われた男。YouTubeちゃんねる→ https://t.co/GEzlFGZsYo僕のプロテイン "
         },
         {
-          "screen_name": "Nottinjpn",
-          "display_name": "Nottinjpn",
-          "followers_count": 54944,
-          "bio": "ゲームの攻略解説動画を作ったりしています。\n\n■YouTubeゲーム実況者/元プロゲーマー\n■登録者35万人⤴︎\n■YouTube https://t.co/KGtEkX2KrG\n■お仕事案件、You"
+          "screen_name": "YamasawaRey",
+          "display_name": "YamasawaRey",
+          "followers_count": 159303,
+          "bio": "YouTube100万人・年商100億円・フィットネスジムFITPLACE24を全国に出店中【現在158店舗】 プロテイン販売(REYS)アパレル事業(EVANE)の代表 ・筋トレ&ダイエットの情報を"
         },
         {
-          "screen_name": "ALLONE_2021",
-          "display_name": "ALLONE_2021",
-          "followers_count": 54494,
-          "bio": "#eスポーツ＆ゲーム周辺機器メーカー\nCrest GamingとDetonatioN FocusMeのスポンサー\nぬいぐるみ・雑貨系の卸売業もやってます\n定期的にキャンペーンを実施中なのでチェックして"
+          "screen_name": "Naasuke_fit",
+          "display_name": "Naasuke_fit",
+          "followers_count": 148765,
+          "bio": "🏁筋トレが大好き28歳社会人 🍔ハンバーガーが大好き🍔🔥ノーストレス減量で好きなようにボディメイク🔥 【https://t.co/WHBrRTV4NQ】"
         },
         {
-          "screen_name": "recog25",
-          "display_name": "recog25",
-          "followers_count": 53488,
-          "bio": "一児の父 / 歌とゲーム実況やってます"
+          "screen_name": "JIN__XENO",
+          "display_name": "JIN__XENO",
+          "followers_count": 112657,
+          "bio": "IFBB PRO ・XENO CEO・Youtuber Newest video▶︎ https://t.co/TULb54VkF4 会社7年目でM&A、現在ロックアップ中"
         },
         {
-          "screen_name": "PlayApexFR",
-          "display_name": "PlayApexFR",
-          "followers_count": 47821,
-          "bio": "Communauté francophone #ApexLegends. Retrouvez toute l'actualité généraliste et esport du battle roy"
+          "screen_name": "weed_51002",
+          "display_name": "weed_51002",
+          "followers_count": 91941,
+          "bio": "DMで嘘の筋トレを募集します。提供以外で何かあれば中の人(@weed_5100)まで。Amazonアソシエイト参加中"
         },
         {
-          "screen_name": "egaono0w0jikan",
-          "display_name": "egaono0w0jikan",
-          "followers_count": 44420,
-          "bio": "笑顔になれるものが好きです。 YouTubeでゲーム実況を投稿しています。ネタ、解説、攻略の元気な動画を投稿しています。OwO"
+          "screen_name": "edwardkato_",
+          "display_name": "edwardkato_",
+          "followers_count": 87636,
+          "bio": "エドワード加藤 フィットネスブランド LYFT CEO"
         },
         {
-          "screen_name": "4y_u",
-          "display_name": "4y_u",
-          "followers_count": 41020,
-          "bio": "フリーeスポーツキャスター/講師/MC/実況/第5回全日本実況王決定戦優勝/名古屋住/実況経験→荒野行動/APEX/PUBGM/FORTNITE/VALORANT/ストリートファイター6/ポケモンユナ"
+          "screen_name": "protein1214",
+          "display_name": "protein1214",
+          "followers_count": 85929,
+          "bio": "このアカウントは閉鎖します。 新しいアカウント作り直しました！！➡︎@purotanyahhooフォローお待ちしております！"
+        }
+      ]
+    },
+    {
+      "community_id": "education",
+      "community_name": "教育界隈",
+      "member_count": 34,
+      "active_member_count": 34,
+      "total_followers_reach": 3335644,
+      "median_followers": 9688,
+      "influencer_count": 18,
+      "top_influencers": [
+        {
+          "screen_name": "gintamamovie",
+          "display_name": "gintamamovie",
+          "followers_count": 808162,
+          "bio": "アニメ『銀魂』公式アカウント‼2026年2月13日（金）「新劇場版 銀魂 -吉原大炎上-」公開‼銀魂20周年プロジェクト進行中‼銀魂まるちばーすアニメ「3年Z組銀八先生」各配信サービスで絶賛配信中‼"
+        },
+        {
+          "screen_name": "_HappyBoy",
+          "display_name": "_HappyBoy",
+          "followers_count": 650397,
+          "bio": "現役17年目の保育士。NHK Eテレ『ハロー！ちびっこモンスター』レギュラーなど。著書は育児本カテゴリ1位・2位を独占。17年の現場の実感と、科学的な裏付けの両方から、今日の子育てにすぐ使えるヒントを"
+        },
+        {
+          "screen_name": "MNS_kyoiku",
+          "display_name": "MNS_kyoiku",
+          "followers_count": 373035,
+          "bio": "存在しない教育番組｜✉️▶︎momonicus@r11r.jp｜LINEｽﾀﾝﾌﾟ▶︎ https://t.co/RiI0SZzQWq｜FA▶︎ #みんなの教育番組"
+        },
+        {
+          "screen_name": "chikichikiko",
+          "display_name": "chikichikiko",
+          "followers_count": 327518,
+          "bio": "『地獄先生ぬ〜べ〜』毎週(水)23時45分〜放送中！！鵺野鳴介👹/\n/『ワンピース〜エッグヘッド編』ボルサリーノ🐵&カク🦒/『忍たま乱太郎』善法寺伊作🍀＆魔界之先生😎/ 『名探偵コナン』綾小路文麿🐿️"
+        },
+        {
+          "screen_name": "youheisensei",
+          "display_name": "youheisensei",
+          "followers_count": 297588,
+          "bio": "こんにちはやふへゐ先生です。やふへゐの読み方は『ようへい』です🚀"
+        },
+        {
+          "screen_name": "EdTech_K12",
+          "display_name": "EdTech_K12",
+          "followers_count": 177002,
+          "bio": "#EdTech issues facing #K12 IT leaders, admins and educators. // Sponsored by CDW•G // Sign up for ti"
+        },
+        {
+          "screen_name": "k_art_u",
+          "display_name": "k_art_u",
+          "followers_count": 112379,
+          "bio": "税理士／お金の教育を広める／自治体と連携したお金の教育を目指す／日本＆海外の学校で\"お金の授業\"を展開⇨https://t.co/bvG58IWFjg／動画＆音声メディアでお金の知識を発信⇨毎日数万人"
+        },
+        {
+          "screen_name": "ja8mrx",
+          "display_name": "ja8mrx",
+          "followers_count": 102728,
+          "bio": "食品工場の工場長の仕事は何かを、纏めたホームページと食品安全教育研究所を主催し ています。https://t.co/27qhoSKOAN\n \n連絡は、ホームページの連絡先からお願いします。"
+        },
+        {
+          "screen_name": "kyoiku_shimbun",
+          "display_name": "kyoiku_shimbun",
+          "followers_count": 84363,
+          "bio": "「教育新聞」公式アカウント。教育新聞のジャーナリストチームは、教育を変えるファクトを伝えます。年間1,600本以上のハイクオリティーな記事から最新ヘッドラインをお届けし ます。"
+        },
+        {
+          "screen_name": "gimukyouiku_bot",
+          "display_name": "gimukyouiku_bot",
+          "followers_count": 78137,
+          "bio": "DMで義務教育の敗北ツイートを募集しています︎メンションもたまに反応します 採用👍 不採用 何もなし 保留🤔"
         }
       ]
     },
     {
       "community_id": "photo",
       "community_name": "写真・カメラ界隈",
-      "member_count": 31,
-      "active_member_count": 31,
-      "total_followers_reach": 1519474,
-      "median_followers": 20760,
-      "influencer_count": 20,
+      "member_count": 34,
+      "active_member_count": 34,
+      "total_followers_reach": 2210217,
+      "median_followers": 21154,
+      "influencer_count": 23,
       "top_influencers": [
+        {
+          "screen_name": "tanaka_tatsuya",
+          "display_name": "tanaka_tatsuya",
+          "followers_count": 637403,
+          "bio": "ミニチュア写真家・見立て作家 ／ 展覧会情報 https://t.co/ATfh2RgvEE ／Instagram https://t.co/iqkZJcnZ5e"
+        },
         {
           "screen_name": "ninagawamika",
           "display_name": "ninagawamika",
-          "followers_count": 464457,
+          "followers_count": 464452,
           "bio": "写真撮ったり写真撮ったり写真撮ったり、映像撮ったりします。"
         },
         {
           "screen_name": "x51",
           "display_name": "x51",
-          "followers_count": 112731,
+          "followers_count": 112736,
           "bio": "「奇界／世界　佐藤健寿作品集」12/19発売  https://t.co/myWyP72S38  https://t.co/2QJlaCnMdQ ＜お問い合わせ＞ info@kikai.org"
         },
         {
@@ -1024,7 +1300,7 @@ const REPORT_DATA = {
         {
           "screen_name": "TakahiroBessho",
           "display_name": "TakahiroBessho",
-          "followers_count": 86262,
+          "followers_count": 86260,
           "bio": "フォトグラファー | 文学研究者 | 関西大学メディア専攻講師 |滋賀| 健康体A | Nikon Z8 | #TeamPixel | https://t.co/zTerzZjK9f | お問い合わせ"
         },
         {
@@ -1036,85 +1312,8 @@ const REPORT_DATA = {
         {
           "screen_name": "railman_nakai",
           "display_name": "railman_nakai",
-          "followers_count": 76787,
+          "followers_count": 76800,
           "bio": "鉄道写真家です。 ゆる鉄派です。 2021年9月より、全国のギャラリーを巡りながら作品を販売する「ゆる鉄画廊NOMAD」スタート！ ブログ1日1鉄！毎日更新中"
-        },
-        {
-          "screen_name": "AIcameramanK",
-          "display_name": "AIcameramanK",
-          "followers_count": 68462,
-          "bio": "バニーガールといえば！を目指しています。\nカメラマン📷として学んだことを武器に、AIによる画像生成を研究しています。\n↓写真集↓ \nhttps://t.co/7DqiRwyvMj\n\n#AIArt #バ"
-        }
-      ]
-    },
-    {
-      "community_id": "vtuber",
-      "community_name": "VTuber界隈",
-      "member_count": 31,
-      "active_member_count": 29,
-      "total_followers_reach": 10864895,
-      "median_followers": 17720,
-      "influencer_count": 21,
-      "top_influencers": [
-        {
-          "screen_name": "nijisanji_app",
-          "display_name": "nijisanji_app",
-          "followers_count": 2038563,
-          "bio": "VTuber / バーチャルライバーグループ「にじさんじ」の公式アカウントです！🌈🕒にじさんじの配信やイベント、グッズなどの最新情報をお届けします。個性溢れるにじさんじライバーをぜひ応援してください！"
-        },
-        {
-          "screen_name": "Vamp_Kuzu",
-          "display_name": "Vamp_Kuzu",
-          "followers_count": 1771755,
-          "bio": "大金持ちのヒモになりたいVtuber 葛葉 ( くずは ) です。 養ってくれる石油王探してます。┆#KuzuVtuber ┆サブ垢 @Vllexceed┆official HP https://t."
-        },
-        {
-          "screen_name": "Kanae_2434",
-          "display_name": "Kanae_2434",
-          "followers_count": 1464493,
-          "bio": "奇跡を味わい尽くそう。 #ロジクールG公認サポーター"
-        },
-        {
-          "screen_name": "ShibuyaHAL",
-          "display_name": "ShibuyaHAL",
-          "followers_count": 827835,
-          "bio": "サブ垢（ @ShibuyaSub ）APEXの実況や大会運営をメインに活動してるVTuberです✌️ VTuber事務所NeoPorte（ @NeoPorte_info ）運営兼所属タレント TSM（"
-        },
-        {
-          "screen_name": "mayuzumi_X",
-          "display_name": "mayuzumi_X",
-          "followers_count": 701532,
-          "bio": "にじさんじ箱推し"
-        },
-        {
-          "screen_name": "HiguchiKaede",
-          "display_name": "HiguchiKaede",
-          "followers_count": 669051,
-          "bio": "かえでろーん_(-ω- ´ _)⌒)_にじさんじ所属(@nijisanji_app)バーチャルライバーの樋口楓です！学校にいる時はなかなか出来ないけど、皆さんを思いっきり笑わせたいです🦊🎨 #でろおん"
-        },
-        {
-          "screen_name": "kei_nagao2434",
-          "display_name": "kei_nagao2434",
-          "followers_count": 617462,
-          "bio": "にじさんじ所属 VΔLZ（@VALZ_info)\n桜魔皇国祓魔師\nライバー マシュマロ→https://t.co/kuSRpeZUFj\n \nお問い合わせ→ https://t.co/uNcMjIH7x"
-        },
-        {
-          "screen_name": "watarai_hibari",
-          "display_name": "watarai_hibari",
-          "followers_count": 571897,
-          "bio": "にじさんじ所属 渡会雲雀（わたらいひばり）って言います！VOLTACTION( @VOLTACTION_info )ママ（@nijuunanayo）配信タグ ＃渡会部 ファンアート #わたらいらすと "
-        },
-        {
-          "screen_name": "maimoto_k",
-          "display_name": "maimoto_k",
-          "followers_count": 545833,
-          "bio": "バーチャル世界に舞い降りたおじさんじこと、#にじさんじ 所属ライバー 舞元啓介と申します。ゲーム実況やスポーツ配信、深夜ラジオなどを中心に活動をしております！ 創作物 #しら画 生放送 #まいもとなま"
-        },
-        {
-          "screen_name": "ENVTubersOOC",
-          "display_name": "ENVTubersOOC",
-          "followers_count": 381610,
-          "bio": "VTuber clip account - Social media & project manager\n\nEmail for Inquiries: batouheisei@gmail.com"
         }
       ]
     },
@@ -1123,20 +1322,20 @@ const REPORT_DATA = {
       "community_name": "FX・投資界隈",
       "member_count": 30,
       "active_member_count": 30,
-      "total_followers_reach": 4429468,
+      "total_followers_reach": 4430861,
       "median_followers": 76663,
       "influencer_count": 28,
       "top_influencers": [
         {
           "screen_name": "tesuta001",
           "display_name": "tesuta001",
-          "followers_count": 1087309,
+          "followers_count": 1087895,
           "bio": "100万人もびっくりありがとうございます🥹詐欺撲滅をお祈りしてます。20年連続プラスのコツコツ型。 2024.2月総利益100億達成。いつの間にか専業投資家の中で１番フォロワーさんが多くなってますが特"
         },
         {
           "screen_name": "cissan_9984",
           "display_name": "cissan_9984",
-          "followers_count": 742276,
+          "followers_count": 743106,
           "bio": "資産430億円株投資家 ポーカー、ブルゴーニュワイン、麻雀、新信長の野望、にゃんこ大戦争"
         },
         {
@@ -1148,7 +1347,7 @@ const REPORT_DATA = {
         {
           "screen_name": "hitsuzikai",
           "display_name": "hitsuzikai",
-          "followers_count": 262823,
+          "followers_count": 262817,
           "bio": "『羊飼いブログ』の管理人、ザイFX！などにも登場🐏FX入門本は複数アリ。ダイヤモンド社の本は40万部以上売れています。★★FXブログは毎日更新中★★『今日のFX！』は毎朝6時台にアップ予定☆(ゝω･)"
         },
         {
@@ -1166,19 +1365,19 @@ const REPORT_DATA = {
         {
           "screen_name": "JFXkobayashi",
           "display_name": "JFXkobayashi",
-          "followers_count": 150387,
+          "followers_count": 150384,
           "bio": "FXスキャルピングに役立つ情報をインターバンク目線で発信。【最大100万円】新規口座開設キャッシュバックキャンペーン実施中⇒https://t.co/EFMuvXFlC2　注意喚起⇒https://t"
         },
         {
           "screen_name": "okasanman",
           "display_name": "okasanman",
-          "followers_count": 148313,
-          "bio": "ایران قدرتمند!\n\n🆗中露、BRICS、人民元、金本位制、中華EV(BYD他)、DeepSeek、Huawei、RISC-V、SMIC、中華ロボット(ユニツリー他)、核融合、宇宙開発、抗老"
+          "followers_count": 148304,
+          "bio": "خدا پشت و پناه زنای خوش‌اندام ایرانی!\n\n🆗中露、BRICS、人民元、金本位制、EV、DeepSeek、Huawei、RISC-V、SMIC、ロボット、核融合、再生"
         },
         {
           "screen_name": "aki_fx1",
           "display_name": "aki_fx1",
-          "followers_count": 121765,
+          "followers_count": 121772,
           "bio": "FXトレーダーとして5億稼ぐ→1億ほど投資しeスポーツ事業へ→設立したチームを3年連続FORTNITE ASIAチャンピオンに導きeスポーツ事業を譲渡売却→次の挑戦に向け勉強中。2023,24円安で2"
         },
         {
@@ -1190,144 +1389,73 @@ const REPORT_DATA = {
       ]
     },
     {
-      "community_id": "education",
-      "community_name": "教育界隈",
-      "member_count": 29,
-      "active_member_count": 29,
-      "total_followers_reach": 1946580,
-      "median_followers": 4234,
-      "influencer_count": 14,
+      "community_id": "startup",
+      "community_name": "起業・スタートアップ界隈",
+      "member_count": 28,
+      "active_member_count": 28,
+      "total_followers_reach": 5401473,
+      "median_followers": 43631,
+      "influencer_count": 21,
       "top_influencers": [
         {
-          "screen_name": "gintamamovie",
-          "display_name": "gintamamovie",
-          "followers_count": 808162,
-          "bio": "アニメ『銀魂』公式アカウント‼2026年2月13日（金）「新劇場版 銀魂 -吉原大炎上-」公開‼銀魂20周年プロジェクト進行中‼銀魂まるちばーすアニメ「3年Z組銀八先生」各配信サービスで絶賛配信中‼"
+          "screen_name": "takapon_jp",
+          "display_name": "takapon_jp",
+          "followers_count": 3310513,
+          "bio": "有料メルマガ https://t.co/sE4NSFYWGpで登録 info@takapon-jp.com https://t.co/VXM752wGsD"
         },
         {
-          "screen_name": "MNS_kyoiku",
-          "display_name": "MNS_kyoiku",
-          "followers_count": 373035,
-          "bio": "存在しない教育番組｜✉️▶︎momonicus@r11r.jp｜LINEｽﾀﾝﾌﾟ▶︎ https://t.co/RiI0SZzQWq｜FA▶︎ #みんなの教育番組"
+          "screen_name": "kensuu",
+          "display_name": "kensuu",
+          "followers_count": 298189,
+          "bio": "アル代表取締役。\n\nハイパー政治ラジオ / 御神託ラジオ / まぼろし会議\n\nなど、Podcastで長時間の情報で良い学びを提供するような番組を作ってます。"
         },
         {
-          "screen_name": "EdTech_K12",
-          "display_name": "EdTech_K12",
-          "followers_count": 177002,
-          "bio": "#EdTech issues facing #K12 IT leaders, admins and educators. // Sponsored by CDW•G // Sign up for ti"
+          "screen_name": "hbkr",
+          "display_name": "hbkr",
+          "followers_count": 245132,
+          "bio": "咳をしても一人"
         },
         {
-          "screen_name": "ja8mrx",
-          "display_name": "ja8mrx",
-          "followers_count": 102728,
-          "bio": "食品工場の工場長の仕事は何かを、纏めたホームページと食品安全教育研究所を主催し ています。https://t.co/27qhoSKOAN\n \n連絡は、ホームページの連絡先からお願いします。"
+          "screen_name": "jasonlk",
+          "display_name": "jasonlk",
+          "followers_count": 234524,
+          "bio": "GET funded ➡ $200m https://t.co/AVvPIrIdFP🦄🦄🦄🦄🦄🦄🦄 FREE PLAYBOOK ➡ https://t.co/TIsMr22AhO CHAT Digit"
         },
         {
-          "screen_name": "kyoiku_shimbun",
-          "display_name": "kyoiku_shimbun",
-          "followers_count": 84368,
-          "bio": "「教育新聞」公式アカウント。教育新聞のジャーナリストチームは、教育を変えるファクトを伝えます。年間1,600本以上のハイクオリティーな記事から最新ヘッドラインをお届けし ます。"
+          "screen_name": "Farmacia_SAAS",
+          "display_name": "Farmacia_SAAS",
+          "followers_count": 233423,
+          "bio": "Cuenta oficial de la red de Farmacia SAAS, la más grande del país, cuyo sello distintivo es el servi"
         },
         {
-          "screen_name": "gimukyouiku_bot",
-          "display_name": "gimukyouiku_bot",
-          "followers_count": 78137,
-          "bio": "DMで義務教育の敗北ツイートを募集しています︎メンションもたまに反応します 採用👍 不採用 何もなし 保留🤔"
+          "screen_name": "suadd",
+          "display_name": "suadd",
+          "followers_count": 220520,
+          "bio": "「映画生活」「フォト蔵」「まちつく！」などをつくってました いまは「メルカリ」をつくっています"
         },
         {
-          "screen_name": "ClassTechTips",
-          "display_name": "ClassTechTips",
-          "followers_count": 77896,
-          "bio": "I help make #EdTech easier — blog + books + podcast + club — Find it all: https://t.co/wnbfKM2Wsy — "
+          "screen_name": "mizoguchi_yuji",
+          "display_name": "mizoguchi_yuji",
+          "followers_count": 210824,
+          "bio": "CEO @realvalue_jp @NoBorder_info @breakingdown_jp @herozz_jp @XDjp_official @yoakef_jp | 著書:持たざる者の逆襲"
         },
         {
-          "screen_name": "saruesteacher",
-          "display_name": "saruesteacher",
-          "followers_count": 51249,
-          "bio": "Canva Japan |Voicyパーソナリティ『限界外資テック RADIO』|著書『Canvaの教科書』『全部やろうはバカやろう』他ベストセラー多数|熊本市授業情報化アドバイザー|三木市教育DX推"
+          "screen_name": "kitahara64",
+          "display_name": "kitahara64",
+          "followers_count": 111360,
+          "bio": "起業家育成スクールを運営｜会員数2300人超｜31歳月給26万→グループ年商50億｜多業種で16社経営｜グループ全体実店舗数270店舗｜5年で全国展開した美容室Dearsの創設者｜企業コンサル契約10"
         },
         {
-          "screen_name": "amebakyoiku",
-          "display_name": "amebakyoiku",
-          "followers_count": 49794,
-          "bio": "＼知らなきゃ損な教育ニュース・制度を図解／ \n◾️我が家はどうする？考えるきっかけをお届け\n◾️有名人コメンテーターの意見も必見👀\n◾️CM放送中📺ぴったり塾診断はこちら⇩"
+          "screen_name": "ceo_01music",
+          "display_name": "ceo_01music",
+          "followers_count": 70417,
+          "bio": "AIを核に創立115年の日本コロムビアを改革し、次世代型IPプロデュースカンパニーを目指す日本コロムビアグループ代表取締役社長▶連続起業で会社複数社売却（累計50億円）▶︎7年間シンガポール移住、ビー"
         },
         {
-          "screen_name": "edtechdigest",
-          "display_name": "edtechdigest",
-          "followers_count": 40279,
-          "bio": "who's who and what's next in edtech"
-        }
-      ]
-    },
-    {
-      "community_id": "muscle",
-      "community_name": "筋トレ界隈",
-      "member_count": 29,
-      "active_member_count": 29,
-      "total_followers_reach": 595155,
-      "median_followers": 8270,
-      "influencer_count": 15,
-      "top_influencers": [
-        {
-          "screen_name": "weed_51002",
-          "display_name": "weed_51002",
-          "followers_count": 91941,
-          "bio": "DMで嘘の筋トレを募集します。提供以外で何かあれば中の人(@weed_5100)まで。Amazonアソシエイト参加中"
-        },
-        {
-          "screen_name": "protein1214",
-          "display_name": "protein1214",
-          "followers_count": 85934,
-          "bio": "このアカウントは閉鎖します。 新しいアカウント作り直しました！！➡︎@purotanyahhooフォローお待ちしております！"
-        },
-        {
-          "screen_name": "chipi_little",
-          "display_name": "chipi_little",
-          "followers_count": 83440,
-          "bio": "ボディメイク講師｜45歳からの一生モノの身体づくり｜自分らしく年を重ね美を育むためのマインドや心がけを発信｜初書籍「ふわトレッチ」好評発売中📚｜体質ボディメイク個別相談「魔法の90分」くわしいご案内は"
-        },
-        {
-          "screen_name": "aminnn_kld",
-          "display_name": "aminnn_kld",
-          "followers_count": 54899,
-          "bio": "女性らしく引き締まった身体作り🌸｜渋谷の女性専門パーソナルトレーナー | NSCA-CPT | 指導歴10年 | トレーニングウェアブランド「ABY」準備中 | 食事管理×筋トレ×美容で、健康的でキレ"
-        },
-        {
-          "screen_name": "kireiniyaseru_1",
-          "display_name": "kireiniyaseru_1",
-          "followers_count": 42819,
-          "bio": "30年間で1万人以上の方に目的別運動プログラムを鉛筆一本で作成してきたフィットネスクラブの猫好きインストラクターです。日本トレーニング指導者協会　認定指導員(JATI-ATI)、健康運動指導士、NSC"
-        },
-        {
-          "screen_name": "yuto_s1117",
-          "display_name": "yuto_s1117",
-          "followers_count": 39503,
-          "bio": "体重57kgのガリガリから13kgの増量に成功｜週5で筋トレをしながら緩やかに増量中｜一緒にガリ脱出するべ😁日常で感じたことや気づいたことを発信しています→ https://t.co/9EbV8mK9"
-        },
-        {
-          "screen_name": "kyokaku_fitness",
-          "display_name": "kyokaku_fitness",
-          "followers_count": 39486,
-          "bio": "太陽よりも輝くあなたに☀️｜ピラティス&パーソナルトレーニングジム Resole ( リソーレ )代表｜JBBFメンズフィジーク全日本4位｜反り腰、呼吸・身体機能を改善するエクササイズを毎日発信してい"
-        },
-        {
-          "screen_name": "lily_bibody",
-          "display_name": "lily_bibody",
-          "followers_count": 31421,
-          "bio": "ボディメイクとお酒の両立"
-        },
-        {
-          "screen_name": "keukintore",
-          "display_name": "keukintore",
-          "followers_count": 18311,
-          "bio": "162cm/54㎏/筋トレ歴3年/アラフォー2児の母/\n40歳からマラソンを始めて約１年。\n初フルマラソンでサブ4.5🔥\n2回目のフルマラソンでサブ4🔥\n次はサブリノ(3:45)を目指して特訓中！！\n"
-        },
-        {
-          "screen_name": "moooooeeeeen",
-          "display_name": "moooooeeeeen",
-          "followers_count": 15968,
-          "bio": "💖 健康美×セクシーで魅せる新世代グラドル💖 元看護師×ボディメイクトレーナー💪写真集「PULSE」発売中！ ファンクラブでプライベートコンテンツ更新中 👉 #砂時計BODY #上向き🍑サマースタイル"
+          "screen_name": "saastr",
+          "display_name": "saastr",
+          "followers_count": 65909,
+          "bio": "World’s 🌍 largest community for B2B + AI founders, execs & VCs. ➡️https://t.co/nA1aNGxZiA. Learn to "
         }
       ]
     },
@@ -1336,14 +1464,14 @@ const REPORT_DATA = {
       "community_name": "エンジニア界隈",
       "member_count": 25,
       "active_member_count": 25,
-      "total_followers_reach": 1031245,
-      "median_followers": 21608,
+      "total_followers_reach": 1031455,
+      "median_followers": 21618,
       "influencer_count": 19,
       "top_influencers": [
         {
           "screen_name": "fladdict",
           "display_name": "fladdict",
-          "followers_count": 224154,
+          "followers_count": 224342,
           "bio": "THE GUILD。行動・認知・体験のデザイナです。 ネットを知の高速道路として復活させたい。 noteと弁護士ドットコムでCXOとAIまわりのサービス設計等をやってます。 書き物 → https:/"
         },
         {
@@ -1355,31 +1483,31 @@ const REPORT_DATA = {
         {
           "screen_name": "yukihiro_matz",
           "display_name": "yukihiro_matz",
-          "followers_count": 94254,
+          "followers_count": 94251,
           "bio": "Matzまたは、まつもとゆきひろ。Rubyのパパ。"
         },
         {
           "screen_name": "ockeghem",
           "display_name": "ockeghem",
-          "followers_count": 68686,
+          "followers_count": 68696,
           "bio": "徳丸本の中の人\nEGセキュアソリューションズCTO\nYouTubeチャンネル:  https://t.co/NX2v3NLNEW\n\n匿名での徳丸への質問はMondから \nhttps://t.co/fs"
         },
         {
           "screen_name": "dankogai",
           "display_name": "dankogai",
-          "followers_count": 67034,
+          "followers_count": 67031,
           "bio": "404 Blog Not Found -- only tweets. https://t.co/u6dBbg4q07 RTs♻️ & likes❤️ ≠🙅‍♂️ endorsements👍"
         },
         {
           "screen_name": "hyuki",
           "display_name": "hyuki",
-          "followers_count": 64971,
+          "followers_count": 64975,
           "bio": "本を書く生活が30年を過ぎ、著書は60冊を越えました。『数学ガール』の作者です。結城メルマガとWeb連載を毎週書いてます。文章書きとプログラミングが好きなクリスチャン。気軽に絡んでくださいね。いつも応"
         },
         {
           "screen_name": "naoya_ito",
           "display_name": "naoya_ito",
-          "followers_count": 45437,
+          "followers_count": 45445,
           "bio": ""
         },
         {
@@ -1403,95 +1531,48 @@ const REPORT_DATA = {
       ]
     },
     {
-      "community_id": "startup",
-      "community_name": "起業・スタートアップ界隈",
-      "member_count": 22,
-      "active_member_count": 22,
-      "total_followers_reach": 1004943,
-      "median_followers": 34706,
-      "influencer_count": 15,
-      "top_influencers": [
-        {
-          "screen_name": "jasonlk",
-          "display_name": "jasonlk",
-          "followers_count": 234524,
-          "bio": "GET funded ➡ $200m https://t.co/AVvPIrIdFP🦄🦄🦄🦄🦄🦄🦄 FREE PLAYBOOK ➡ https://t.co/TIsMr22AhO CHAT Digit"
-        },
-        {
-          "screen_name": "Farmacia_SAAS",
-          "display_name": "Farmacia_SAAS",
-          "followers_count": 233423,
-          "bio": "Cuenta oficial de la red de Farmacia SAAS, la más grande del país, cuyo sello distintivo es el servi"
-        },
-        {
-          "screen_name": "ceo_01music",
-          "display_name": "ceo_01music",
-          "followers_count": 70417,
-          "bio": "AIを核に創立115年の日本コロムビアを改革し、次世代型IPプロデュースカンパニーを目指す日本コロムビアグループ代表取締役社長▶連続起業で会社複数社売却（累計50億円）▶︎7年間シンガポール移住、ビー"
-        },
-        {
-          "screen_name": "saastr",
-          "display_name": "saastr",
-          "followers_count": 65909,
-          "bio": "World’s 🌍 largest community for B2B + AI founders, execs & VCs. ➡️https://t.co/nA1aNGxZiA. Learn to "
-        },
-        {
-          "screen_name": "Anrit",
-          "display_name": "Anrit",
-          "followers_count": 50734,
-          "bio": "Founder at https://t.co/SwpasbRrBR CIRCLE by ANRIをやっておる"
-        },
-        {
-          "screen_name": "djtokyo",
-          "display_name": "djtokyo",
-          "followers_count": 49163,
-          "bio": "LONG LIVE SOFTWARE!\n\nLETS GO!"
-        },
-        {
-          "screen_name": "LindseyCreated",
-          "display_name": "LindseyCreated",
-          "followers_count": 47768,
-          "bio": "a Black product design lead 👩🏿‍💻 | building https://t.co/ftVqsqRF86 for founders and https://t.co/Sf"
-        },
-        {
-          "screen_name": "heralbony_twins",
-          "display_name": "heralbony_twins",
-          "followers_count": 47375,
-          "bio": "👬崇弥（東京）文登（岩手）一卵性双子｜自閉症の兄が記す謎言葉「#ヘラルボニー（@heralbony）」起業家 ｜🏆Art Prize https://t.co/tQmgXzBemb 💳ART CRED"
-        },
-        {
-          "screen_name": "mei_kaicho",
-          "display_name": "mei_kaicho",
-          "followers_count": 39887,
-          "bio": "6年連続年収1億円・起業歴14年・会社9期目です🫰🥹 実店舗3つ所有。🔗フォロワー40万人に増やした実績あり プロフのリンクからポケカ無在庫教えます！"
-        },
-        {
-          "screen_name": "chibakotaro",
-          "display_name": "chibakotaro",
-          "followers_count": 38964,
-          "bio": "鎌倉市⛩＆ハワイ🌺🏝在住。ホンダジェット国内1号機オーナー兼 航空パイロット（🇯🇵🇺🇸🇺🇦）空飛ぶクルマ1号機購入契約。寿司職人、千葉農園、個人投資家、千葉道場/Drone Fund共同代表。慶應義塾"
-        }
-      ]
-    },
-    {
       "community_id": "politics",
       "community_name": "政治界隈",
-      "member_count": 16,
-      "active_member_count": 16,
-      "total_followers_reach": 2361594,
-      "median_followers": 41401,
-      "influencer_count": 13,
+      "member_count": 21,
+      "active_member_count": 21,
+      "total_followers_reach": 9696142,
+      "median_followers": 59819,
+      "influencer_count": 18,
       "top_influencers": [
+        {
+          "screen_name": "konotarogomame",
+          "display_name": "konotarogomame",
+          "followers_count": 2357902,
+          "bio": "衆議院議員 湘南ベルマーレ元代表取締役 湘南国際マラソン大会名誉会長 https://t.co/6mLJylGnCi @konotaromp for tweets in English."
+        },
+        {
+          "screen_name": "hashimoto_lo",
+          "display_name": "hashimoto_lo",
+          "followers_count": 2346522,
+          "bio": "橋下徹からの発信・番組出演などの各種情報は下記ホームページへ。サブスク掲載の情報や画像は、転載・引用厳禁でお願いします！！ Youtubeアカウントはこちら→https://t.co/nqnBUJN8"
+        },
+        {
+          "screen_name": "hiroyoshimura",
+          "display_name": "hiroyoshimura",
+          "followers_count": 1373380,
+          "bio": "日本維新の会代表、大阪維新の会代表の吉村洋文です。50歳。「意志あるところに道は開ける」を胸に、前へ。前大阪市長 弁護士 YouTube「吉村洋文チャンネル」始めましたhttps://t.co/PdO"
+        },
+        {
+          "screen_name": "tsuda",
+          "display_name": "tsuda",
+          "followers_count": 1197020,
+          "bio": "ジャーナリスト／ポリタスTVキャスター→https://t.co/3c9ca84KUB｜仕事依頼→https://t.co/ehfamTbUs3｜※サブスクのポストは表では書きにくい話や、取材のこぼれ"
+        },
         {
           "screen_name": "namatahara",
           "display_name": "namatahara",
-          "followers_count": 874580,
+          "followers_count": 874521,
           "bio": "「朝まで生テレビ」@asamadetv https://t.co/2nVwlsTB4y YouTube→https://t.co/OYW1ywJHtV https://t.co/iBG3ADQPmO"
         },
         {
           "screen_name": "inosenaoki",
           "display_name": "inosenaoki",
-          "followers_count": 865996,
+          "followers_count": 865960,
           "bio": "作家。Writer ◆公式サイト https://t.co/QFQS9ZCcaq ◆オンラインサロン「近現代を読む」 https://t.co/0NJLY4hgsr ◆facebook https:/"
         },
         {
@@ -1517,30 +1598,6 @@ const REPORT_DATA = {
           "display_name": "aniotahosyu",
           "followers_count": 83461,
           "bio": "作家・評論家。社）令和政治社会問題研究所所長、社）日本ペンクラブ正会員、株）パシフィックボイス所属。著書『シニア右翼』（中央公論新社）、『敗軍の名将』（幻冬舎）、長編小説『愛国商売』（小学館）、『日本"
-        },
-        {
-          "screen_name": "akahataseiji",
-          "display_name": "akahataseiji",
-          "followers_count": 44693,
-          "bio": "市民と野党の共闘や国政の現場で見た、聞いた、感じたことを政治記者がつぶやきます。注目情報も紹介。ツイートやリツイートは日本共産党や「赤旗」の見解ではありません。ぜひ「赤旗」のご購読を。公式のサイトやア"
-        },
-        {
-          "screen_name": "kawamatsushin16",
-          "display_name": "kawamatsushin16",
-          "followers_count": 44447,
-          "bio": "【闘う、政治家。】◾自民党東京都連幹事長代行◾Tokyo metropolitan assemblyman ◾元テレ朝アナ ◾GeorgetownUniv日米リーダーシッププログラム修了 ◾ラグビー平"
-        },
-        {
-          "screen_name": "nikkeiseijibu",
-          "display_name": "nikkeiseijibu",
-          "followers_count": 38355,
-          "bio": "日本経済新聞社の政治部が運営する公式アカウントです。\n#政府 #国会 #選挙 #外交 #安全保障 #政権\n写真・映像・テキストの転載、改変およびAIを用いた加工処理等は固くお断りいたします。日本経済新"
-        },
-        {
-          "screen_name": "takahashimitsu7",
-          "display_name": "takahashimitsu7",
-          "followers_count": 32016,
-          "bio": "公明党 参議院議員（兵庫選挙区）元農林水産大臣政務官／党農水部会長、青年局長／元外交官／ポルトガル語総理通訳，在ブラジル日本大使館等勤務／宝塚市出身／阪神淡路大震災を経験／中大法卒／日本と世界をつなぎ"
         }
       ]
     }
@@ -1556,17 +1613,17 @@ const REPORT_DATA = {
       "containment_b_in_a": 0.13333333333333333
     },
     {
-      "community_a": "anime",
-      "community_b": "beauty",
-      "intersection_count": 0,
-      "union_count": 115,
-      "jaccard": 0.0,
-      "containment_a_in_b": 0.0,
-      "containment_b_in_a": 0.0
+      "community_a": "nanpa",
+      "community_b": "sedori",
+      "intersection_count": 1,
+      "union_count": 740,
+      "jaccard": 0.0013513513513513514,
+      "containment_a_in_b": 0.0014388489208633094,
+      "containment_b_in_a": 0.021739130434782608
     },
     {
       "community_a": "anime",
-      "community_b": "crypto",
+      "community_b": "beauty",
       "intersection_count": 0,
       "union_count": 114,
       "jaccard": 0.0,
@@ -1575,9 +1632,18 @@ const REPORT_DATA = {
     },
     {
       "community_a": "anime",
+      "community_b": "crypto",
+      "intersection_count": 0,
+      "union_count": 113,
+      "jaccard": 0.0,
+      "containment_a_in_b": 0.0,
+      "containment_b_in_a": 0.0
+    },
+    {
+      "community_a": "anime",
       "community_b": "education",
       "intersection_count": 0,
-      "union_count": 91,
+      "union_count": 90,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1586,7 +1652,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "engineer",
       "intersection_count": 0,
-      "union_count": 82,
+      "union_count": 81,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1595,7 +1661,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "food",
       "intersection_count": 0,
-      "union_count": 107,
+      "union_count": 106,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1604,7 +1670,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "fortune",
       "intersection_count": 0,
-      "union_count": 117,
+      "union_count": 116,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1613,7 +1679,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "fx_traders",
       "intersection_count": 0,
-      "union_count": 87,
+      "union_count": 86,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1622,7 +1688,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "gaming",
       "intersection_count": 0,
-      "union_count": 104,
+      "union_count": 103,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1631,7 +1697,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "host",
       "intersection_count": 0,
-      "union_count": 99,
+      "union_count": 98,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1640,7 +1706,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "idol",
       "intersection_count": 0,
-      "union_count": 97,
+      "union_count": 96,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1649,7 +1715,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "muscle",
       "intersection_count": 0,
-      "union_count": 97,
+      "union_count": 96,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1658,7 +1724,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 757,
+      "union_count": 751,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1667,7 +1733,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "photo",
       "intersection_count": 0,
-      "union_count": 91,
+      "union_count": 90,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1676,7 +1742,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "politics",
       "intersection_count": 0,
-      "union_count": 78,
+      "union_count": 77,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1685,7 +1751,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "sedori",
       "intersection_count": 0,
-      "union_count": 103,
+      "union_count": 102,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1694,7 +1760,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "startup",
       "intersection_count": 0,
-      "union_count": 85,
+      "union_count": 84,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1703,7 +1769,7 @@ const REPORT_DATA = {
       "community_a": "anime",
       "community_b": "vtuber",
       "intersection_count": 0,
-      "union_count": 101,
+      "union_count": 100,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1802,7 +1868,7 @@ const REPORT_DATA = {
       "community_a": "beauty",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 758,
+      "union_count": 753,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -1928,7 +1994,7 @@ const REPORT_DATA = {
       "community_a": "crypto",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 757,
+      "union_count": 752,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2054,7 +2120,7 @@ const REPORT_DATA = {
       "community_a": "education",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 734,
+      "union_count": 729,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2171,7 +2237,7 @@ const REPORT_DATA = {
       "community_a": "engineer",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 725,
+      "union_count": 720,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2279,7 +2345,7 @@ const REPORT_DATA = {
       "community_a": "food",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 750,
+      "union_count": 745,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2378,7 +2444,7 @@ const REPORT_DATA = {
       "community_a": "fortune",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 760,
+      "union_count": 755,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2468,7 +2534,7 @@ const REPORT_DATA = {
       "community_a": "fx_traders",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 730,
+      "union_count": 725,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2549,7 +2615,7 @@ const REPORT_DATA = {
       "community_a": "gaming",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 747,
+      "union_count": 742,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2621,7 +2687,7 @@ const REPORT_DATA = {
       "community_a": "host",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 742,
+      "union_count": 737,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2684,7 +2750,7 @@ const REPORT_DATA = {
       "community_a": "idol",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 740,
+      "union_count": 735,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2738,7 +2804,7 @@ const REPORT_DATA = {
       "community_a": "muscle",
       "community_b": "nanpa",
       "intersection_count": 0,
-      "union_count": 740,
+      "union_count": 735,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2792,7 +2858,7 @@ const REPORT_DATA = {
       "community_a": "nanpa",
       "community_b": "photo",
       "intersection_count": 0,
-      "union_count": 734,
+      "union_count": 729,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2801,16 +2867,7 @@ const REPORT_DATA = {
       "community_a": "nanpa",
       "community_b": "politics",
       "intersection_count": 0,
-      "union_count": 721,
-      "jaccard": 0.0,
-      "containment_a_in_b": 0.0,
-      "containment_b_in_a": 0.0
-    },
-    {
-      "community_a": "nanpa",
-      "community_b": "sedori",
-      "intersection_count": 0,
-      "union_count": 746,
+      "union_count": 716,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2819,7 +2876,7 @@ const REPORT_DATA = {
       "community_a": "nanpa",
       "community_b": "startup",
       "intersection_count": 0,
-      "union_count": 728,
+      "union_count": 723,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -2828,7 +2885,7 @@ const REPORT_DATA = {
       "community_a": "nanpa",
       "community_b": "vtuber",
       "intersection_count": 0,
-      "union_count": 744,
+      "union_count": 739,
       "jaccard": 0.0,
       "containment_a_in_b": 0.0,
       "containment_b_in_a": 0.0
@@ -3202,7 +3259,7 @@ const REPORT_DATA = {
         1.0,
         0.0,
         0.0,
-        0.0,
+        0.0013513513513513514,
         0.0,
         0.0
       ],
@@ -3259,7 +3316,7 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
-        0.0,
+        0.0013513513513513514,
         0.0,
         0.0,
         1.0,
@@ -3310,6 +3367,87 @@ const REPORT_DATA = {
   },
   "affinities": [
     {
+      "community_a": "gaming",
+      "community_b": "vtuber",
+      "a_follows_b_count": 21,
+      "b_follows_a_count": 20,
+      "a_follows_b_ratio": 0.010154738878143133,
+      "b_follows_a_ratio": 0.009671179883945842,
+      "affinity": 0.009912959381044487
+    },
+    {
+      "community_a": "food",
+      "community_b": "muscle",
+      "a_follows_b_count": 18,
+      "b_follows_a_count": 4,
+      "a_follows_b_ratio": 0.009,
+      "b_follows_a_ratio": 0.002,
+      "affinity": 0.0055
+    },
+    {
+      "community_a": "politics",
+      "community_b": "startup",
+      "a_follows_b_count": 6,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.01020408163265306,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00510204081632653
+    },
+    {
+      "community_a": "muscle",
+      "community_b": "startup",
+      "a_follows_b_count": 8,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.007142857142857143,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0035714285714285713
+    },
+    {
+      "community_a": "idol",
+      "community_b": "vtuber",
+      "a_follows_b_count": 9,
+      "b_follows_a_count": 3,
+      "a_follows_b_ratio": 0.005113636363636364,
+      "b_follows_a_ratio": 0.0017045454545454545,
+      "affinity": 0.003409090909090909
+    },
+    {
+      "community_a": "anime",
+      "community_b": "vtuber",
+      "a_follows_b_count": 7,
+      "b_follows_a_count": 8,
+      "a_follows_b_ratio": 0.002840909090909091,
+      "b_follows_a_ratio": 0.003246753246753247,
+      "affinity": 0.003043831168831169
+    },
+    {
+      "community_a": "engineer",
+      "community_b": "startup",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.002857142857142857,
+      "b_follows_a_ratio": 0.0014285714285714286,
+      "affinity": 0.002142857142857143
+    },
+    {
+      "community_a": "muscle",
+      "community_b": "politics",
+      "a_follows_b_count": 3,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0035714285714285713,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0017857142857142857
+    },
+    {
+      "community_a": "anime",
+      "community_b": "gaming",
+      "a_follows_b_count": 4,
+      "b_follows_a_count": 4,
+      "a_follows_b_ratio": 0.001519756838905775,
+      "b_follows_a_ratio": 0.001519756838905775,
+      "affinity": 0.001519756838905775
+    },
+    {
       "community_a": "fx_traders",
       "community_b": "sedori",
       "a_follows_b_count": 0,
@@ -3317,6 +3455,42 @@ const REPORT_DATA = {
       "a_follows_b_ratio": 0.0,
       "b_follows_a_ratio": 0.002898550724637681,
       "affinity": 0.0014492753623188406
+    },
+    {
+      "community_a": "photo",
+      "community_b": "politics",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0028011204481792717,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0014005602240896359
+    },
+    {
+      "community_a": "anime",
+      "community_b": "education",
+      "a_follows_b_count": 5,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0026260504201680674,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0013130252100840337
+    },
+    {
+      "community_a": "food",
+      "community_b": "idol",
+      "a_follows_b_count": 4,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.002,
+      "b_follows_a_ratio": 0.0005,
+      "affinity": 0.00125
+    },
+    {
+      "community_a": "fx_traders",
+      "community_b": "startup",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.002380952380952381,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0011904761904761906
     },
     {
       "community_a": "crypto",
@@ -3328,31 +3502,85 @@ const REPORT_DATA = {
       "affinity": 0.0011695906432748538
     },
     {
-      "community_a": "politics",
+      "community_a": "education",
       "community_b": "startup",
-      "a_follows_b_count": 1,
+      "a_follows_b_count": 2,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.0017006802721088435,
+      "a_follows_b_ratio": 0.0021008403361344537,
       "b_follows_a_ratio": 0.0,
-      "affinity": 0.0008503401360544217
+      "affinity": 0.0010504201680672268
     },
     {
-      "community_a": "anime",
-      "community_b": "vtuber",
-      "a_follows_b_count": 1,
-      "b_follows_a_count": 3,
-      "a_follows_b_ratio": 0.00039872408293460925,
-      "b_follows_a_ratio": 0.0011961722488038277,
-      "affinity": 0.0007974481658692185
+      "community_a": "photo",
+      "community_b": "startup",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0021008403361344537,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0010504201680672268
     },
     {
       "community_a": "engineer",
-      "community_b": "startup",
+      "community_b": "muscle",
       "a_follows_b_count": 0,
+      "b_follows_a_count": 2,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.002,
+      "affinity": 0.001
+    },
+    {
+      "community_a": "education",
+      "community_b": "food",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 3,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0017647058823529412,
+      "affinity": 0.0008823529411764706
+    },
+    {
+      "community_a": "host",
+      "community_b": "vtuber",
+      "a_follows_b_count": 3,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0016233766233766235,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0008116883116883117
+    },
+    {
+      "community_a": "gaming",
+      "community_b": "idol",
+      "a_follows_b_count": 2,
       "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0010638297872340426,
+      "b_follows_a_ratio": 0.0005319148936170213,
+      "affinity": 0.000797872340425532
+    },
+    {
+      "community_a": "education",
+      "community_b": "muscle",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 2,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0014705882352941176,
+      "affinity": 0.0007352941176470588
+    },
+    {
+      "community_a": "anime",
+      "community_b": "engineer",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 2,
       "a_follows_b_ratio": 0.0,
       "b_follows_a_ratio": 0.0014285714285714286,
       "affinity": 0.0007142857142857143
+    },
+    {
+      "community_a": "fx_traders",
+      "community_b": "gaming",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0014184397163120568,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0007092198581560284
     },
     {
       "community_a": "crypto",
@@ -3364,6 +3592,33 @@ const REPORT_DATA = {
       "affinity": 0.0007017543859649122
     },
     {
+      "community_a": "anime",
+      "community_b": "idol",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0008928571428571428,
+      "b_follows_a_ratio": 0.0004464285714285714,
+      "affinity": 0.0006696428571428571
+    },
+    {
+      "community_a": "food",
+      "community_b": "fx_traders",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0006666666666666666,
+      "b_follows_a_ratio": 0.0006666666666666666,
+      "affinity": 0.0006666666666666666
+    },
+    {
+      "community_a": "fortune",
+      "community_b": "startup",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0011904761904761906,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0005952380952380953
+    },
+    {
       "community_a": "engineer",
       "community_b": "photo",
       "a_follows_b_count": 0,
@@ -3373,31 +3628,40 @@ const REPORT_DATA = {
       "affinity": 0.000588235294117647
     },
     {
-      "community_a": "idol",
-      "community_b": "vtuber",
+      "community_a": "food",
+      "community_b": "photo",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.000588235294117647,
+      "b_follows_a_ratio": 0.000588235294117647,
+      "affinity": 0.000588235294117647
+    },
+    {
+      "community_a": "anime",
+      "community_b": "food",
       "a_follows_b_count": 0,
-      "b_follows_a_count": 2,
+      "b_follows_a_count": 3,
       "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.0011363636363636363,
-      "affinity": 0.0005681818181818182
+      "b_follows_a_ratio": 0.0010714285714285715,
+      "affinity": 0.0005357142857142857
     },
     {
       "community_a": "engineer",
-      "community_b": "muscle",
-      "a_follows_b_count": 0,
-      "b_follows_a_count": 1,
-      "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.001,
+      "community_b": "idol",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.001,
+      "b_follows_a_ratio": 0.0,
       "affinity": 0.0005
     },
     {
-      "community_a": "food",
-      "community_b": "muscle",
+      "community_a": "education",
+      "community_b": "fx_traders",
       "a_follows_b_count": 0,
-      "b_follows_a_count": 2,
+      "b_follows_a_count": 1,
       "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.001,
-      "affinity": 0.0005
+      "b_follows_a_ratio": 0.000980392156862745,
+      "affinity": 0.0004901960784313725
     },
     {
       "community_a": "food",
@@ -3409,13 +3673,31 @@ const REPORT_DATA = {
       "affinity": 0.0004761904761904762
     },
     {
-      "community_a": "anime",
-      "community_b": "idol",
-      "a_follows_b_count": 2,
+      "community_a": "food",
+      "community_b": "politics",
+      "a_follows_b_count": 1,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.0008771929824561404,
+      "a_follows_b_ratio": 0.0009523809523809524,
       "b_follows_a_ratio": 0.0,
-      "affinity": 0.0004385964912280702
+      "affinity": 0.0004761904761904762
+    },
+    {
+      "community_a": "engineer",
+      "community_b": "vtuber",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0009090909090909091,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00045454545454545455
+    },
+    {
+      "community_a": "anime",
+      "community_b": "fortune",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0005952380952380953,
+      "b_follows_a_ratio": 0.00029761904761904765,
+      "affinity": 0.00044642857142857147
     },
     {
       "community_a": "engineer",
@@ -3425,6 +3707,33 @@ const REPORT_DATA = {
       "a_follows_b_ratio": 0.0,
       "b_follows_a_ratio": 0.0008695652173913044,
       "affinity": 0.0004347826086956522
+    },
+    {
+      "community_a": "anime",
+      "community_b": "host",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.00042517006802721087,
+      "b_follows_a_ratio": 0.00042517006802721087,
+      "affinity": 0.00042517006802721087
+    },
+    {
+      "community_a": "host",
+      "community_b": "startup",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0008503401360544217,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00042517006802721087
+    },
+    {
+      "community_a": "fortune",
+      "community_b": "idol",
+      "a_follows_b_count": 2,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0008333333333333334,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0004166666666666667
     },
     {
       "community_a": "fx_traders",
@@ -3445,15 +3754,6 @@ const REPORT_DATA = {
       "affinity": 0.00038138825324180017
     },
     {
-      "community_a": "anime",
-      "community_b": "gaming",
-      "a_follows_b_count": 0,
-      "b_follows_a_count": 2,
-      "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.0007465472191116088,
-      "affinity": 0.0003732736095558044
-    },
-    {
       "community_a": "host",
       "community_b": "photo",
       "a_follows_b_count": 0,
@@ -3461,6 +3761,15 @@ const REPORT_DATA = {
       "a_follows_b_ratio": 0.0,
       "b_follows_a_ratio": 0.0007002801120448179,
       "affinity": 0.00035014005602240897
+    },
+    {
+      "community_a": "education",
+      "community_b": "vtuber",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0006684491978609625,
+      "affinity": 0.00033422459893048126
     },
     {
       "community_a": "engineer",
@@ -3472,6 +3781,24 @@ const REPORT_DATA = {
       "affinity": 0.0003333333333333333
     },
     {
+      "community_a": "food",
+      "community_b": "fortune",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 2,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0006666666666666666,
+      "affinity": 0.0003333333333333333
+    },
+    {
+      "community_a": "education",
+      "community_b": "sedori",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0006393861892583121,
+      "affinity": 0.00031969309462915604
+    },
+    {
       "community_a": "crypto",
       "community_b": "startup",
       "a_follows_b_count": 0,
@@ -3481,49 +3808,13 @@ const REPORT_DATA = {
       "affinity": 0.0003132832080200501
     },
     {
-      "community_a": "food",
+      "community_a": "fortune",
       "community_b": "photo",
-      "a_follows_b_count": 0,
-      "b_follows_a_count": 1,
-      "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.000588235294117647,
-      "affinity": 0.0002941176470588235
-    },
-    {
-      "community_a": "anime",
-      "community_b": "fortune",
-      "a_follows_b_count": 2,
-      "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.0005847953216374269,
-      "b_follows_a_ratio": 0.0,
-      "affinity": 0.00029239766081871346
-    },
-    {
-      "community_a": "gaming",
-      "community_b": "idol",
       "a_follows_b_count": 1,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.0005319148936170213,
+      "a_follows_b_ratio": 0.0004901960784313725,
       "b_follows_a_ratio": 0.0,
-      "affinity": 0.00026595744680851064
-    },
-    {
-      "community_a": "food",
-      "community_b": "idol",
-      "a_follows_b_count": 0,
-      "b_follows_a_count": 1,
-      "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.0005,
-      "affinity": 0.00025
-    },
-    {
-      "community_a": "gaming",
-      "community_b": "vtuber",
-      "a_follows_b_count": 1,
-      "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.00048355899419729207,
-      "b_follows_a_ratio": 0.0,
-      "affinity": 0.00024177949709864604
+      "affinity": 0.00024509803921568627
     },
     {
       "community_a": "gaming",
@@ -3536,30 +3827,75 @@ const REPORT_DATA = {
     },
     {
       "community_a": "anime",
-      "community_b": "food",
+      "community_b": "muscle",
       "a_follows_b_count": 0,
       "b_follows_a_count": 1,
       "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.0003508771929824561,
-      "affinity": 0.00017543859649122806
+      "b_follows_a_ratio": 0.0004464285714285714,
+      "affinity": 0.0002232142857142857
     },
     {
-      "community_a": "food",
-      "community_b": "fortune",
+      "community_a": "beauty",
+      "community_b": "idol",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0004310344827586207,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00021551724137931034
+    },
+    {
+      "community_a": "beauty",
+      "community_b": "muscle",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0004310344827586207,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00021551724137931034
+    },
+    {
+      "community_a": "fortune",
+      "community_b": "muscle",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0004166666666666667,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.00020833333333333335
+    },
+    {
+      "community_a": "fortune",
+      "community_b": "host",
+      "a_follows_b_count": 1,
+      "b_follows_a_count": 0,
+      "a_follows_b_ratio": 0.0003968253968253968,
+      "b_follows_a_ratio": 0.0,
+      "affinity": 0.0001984126984126984
+    },
+    {
+      "community_a": "anime",
+      "community_b": "crypto",
       "a_follows_b_count": 0,
       "b_follows_a_count": 1,
       "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 0.0003333333333333333,
-      "affinity": 0.00016666666666666666
+      "b_follows_a_ratio": 0.0003132832080200501,
+      "affinity": 0.00015664160401002505
+    },
+    {
+      "community_a": "anime",
+      "community_b": "beauty",
+      "a_follows_b_count": 0,
+      "b_follows_a_count": 1,
+      "a_follows_b_ratio": 0.0,
+      "b_follows_a_ratio": 0.0003078817733990148,
+      "affinity": 0.0001539408866995074
     },
     {
       "community_a": "muscle",
       "community_b": "nanpa",
-      "a_follows_b_count": 3,
+      "a_follows_b_count": 5,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 0.00010714285714285714,
+      "a_follows_b_ratio": 0.00017985611510791367,
       "b_follows_a_ratio": 0.0,
-      "affinity": 5.357142857142857e-05
+      "affinity": 8.992805755395684e-05
     },
     {
       "community_a": "nanpa",
@@ -3567,35 +3903,35 @@ const REPORT_DATA = {
       "a_follows_b_count": 0,
       "b_follows_a_count": 3,
       "a_follows_b_ratio": 0.0,
-      "b_follows_a_ratio": 9.316770186335404e-05,
-      "affinity": 4.658385093167702e-05
+      "b_follows_a_ratio": 9.383797309978104e-05,
+      "affinity": 4.691898654989052e-05
     },
     {
       "community_a": "fx_traders",
       "community_b": "nanpa",
       "a_follows_b_count": 1,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 4.761904761904762e-05,
+      "a_follows_b_ratio": 4.796163069544364e-05,
       "b_follows_a_ratio": 0.0,
-      "affinity": 2.380952380952381e-05
+      "affinity": 2.398081534772182e-05
     },
     {
       "community_a": "idol",
       "community_b": "nanpa",
       "a_follows_b_count": 1,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 3.571428571428572e-05,
+      "a_follows_b_ratio": 3.597122302158273e-05,
       "b_follows_a_ratio": 0.0,
-      "affinity": 1.785714285714286e-05
+      "affinity": 1.7985611510791367e-05
     },
     {
       "community_a": "crypto",
       "community_b": "nanpa",
       "a_follows_b_count": 1,
       "b_follows_a_count": 0,
-      "a_follows_b_ratio": 2.506265664160401e-05,
+      "a_follows_b_ratio": 2.524296352391771e-05,
       "b_follows_a_ratio": 0.0,
-      "affinity": 1.2531328320802006e-05
+      "affinity": 1.2621481761958854e-05
     }
   ],
   "affinity_matrix": {
@@ -3622,26 +3958,26 @@ const REPORT_DATA = {
     "matrix": [
       [
         1.0,
+        0.0001539408866995074,
+        0.00015664160401002505,
+        0.0013130252100840337,
+        0.0007142857142857143,
+        0.0005357142857142857,
+        0.00044642857142857147,
+        0.0,
+        0.001519756838905775,
+        0.00042517006802721087,
+        0.0006696428571428571,
+        0.0002232142857142857,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.00017543859649122806,
-        0.00029239766081871346,
         0.0,
-        0.0003732736095558044,
-        0.0,
-        0.0004385964912280702,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0007974481658692185
+        0.003043831168831169
       ],
       [
-        0.0,
+        0.0001539408866995074,
         1.0,
         0.0,
         0.0,
@@ -3651,8 +3987,8 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
-        0.0,
-        0.0,
+        0.00021551724137931034,
+        0.00021551724137931034,
         0.0,
         0.0,
         0.0,
@@ -3661,7 +3997,7 @@ const REPORT_DATA = {
         0.0
       ],
       [
-        0.0,
+        0.00015664160401002505,
         0.0,
         1.0,
         0.0,
@@ -3673,7 +4009,7 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
-        1.2531328320802006e-05,
+        1.2621481761958854e-05,
         0.0,
         0.0,
         0.00038138825324180017,
@@ -3681,27 +4017,27 @@ const REPORT_DATA = {
         0.0
       ],
       [
-        0.0,
+        0.0013130252100840337,
         0.0,
         0.0,
         1.0,
         0.0,
+        0.0008823529411764706,
+        0.0,
+        0.0004901960784313725,
         0.0,
         0.0,
         0.0,
+        0.0007352941176470588,
         0.0,
         0.0,
         0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
+        0.00031969309462915604,
+        0.0010504201680672268,
+        0.00033422459893048126
       ],
       [
-        0.0,
+        0.0007142857142857143,
         0.0,
         0.0007017543859649122,
         0.0,
@@ -3711,94 +4047,194 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
-        0.0,
         0.0005,
+        0.001,
         0.0,
         0.000588235294117647,
         0.0,
         0.0004347826086956522,
-        0.0007142857142857143,
-        0.0
+        0.002142857142857143,
+        0.00045454545454545455
       ],
       [
-        0.00017543859649122806,
+        0.0005357142857142857,
         0.0,
         0.0,
-        0.0,
+        0.0008823529411764706,
         0.0,
         1.0,
-        0.00016666666666666666,
-        0.0,
+        0.0003333333333333333,
+        0.0006666666666666666,
         0.0,
         0.0004761904761904762,
-        0.00025,
-        0.0005,
+        0.00125,
+        0.0055,
         0.0,
-        0.0002941176470588235,
-        0.0,
+        0.000588235294117647,
+        0.0004761904761904762,
         0.0,
         0.0,
         0.0
       ],
       [
-        0.00029239766081871346,
+        0.00044642857142857147,
         0.0,
         0.0,
         0.0,
         0.0003333333333333333,
-        0.00016666666666666666,
+        0.0003333333333333333,
         1.0,
         0.0,
         0.0,
+        0.0001984126984126984,
+        0.0004166666666666667,
+        0.00020833333333333335,
+        0.0,
+        0.00024509803921568627,
         0.0,
         0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
+        0.0005952380952380953,
         0.0
       ],
       [
         0.0,
         0.0,
         0.0011695906432748538,
+        0.0004901960784313725,
         0.0,
-        0.0,
-        0.0,
+        0.0006666666666666666,
         0.0,
         1.0,
-        0.0,
+        0.0007092198581560284,
         0.0,
         0.0,
         0.0004166666666666667,
-        2.380952380952381e-05,
+        2.398081534772182e-05,
         0.0,
         0.0,
         0.0014492753623188406,
-        0.0,
+        0.0011904761904761906,
         0.0
       ],
       [
-        0.0003732736095558044,
+        0.001519756838905775,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.0,
+        0.0007092198581560284,
         1.0,
         0.0,
-        0.00026595744680851064,
+        0.000797872340425532,
         0.0,
         0.0,
         0.0,
         0.0,
         0.00023126734505087883,
         0.0,
-        0.00024177949709864604
+        0.009912959381044487
+      ],
+      [
+        0.00042517006802721087,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0004761904761904762,
+        0.0001984126984126984,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.00035014005602240897,
+        0.0,
+        0.0,
+        0.00042517006802721087,
+        0.0008116883116883117
+      ],
+      [
+        0.0006696428571428571,
+        0.00021551724137931034,
+        0.0,
+        0.0,
+        0.0005,
+        0.00125,
+        0.0004166666666666667,
+        0.0,
+        0.000797872340425532,
+        0.0,
+        1.0,
+        0.0,
+        1.7985611510791367e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.003409090909090909
+      ],
+      [
+        0.0002232142857142857,
+        0.00021551724137931034,
+        0.0,
+        0.0007352941176470588,
+        0.001,
+        0.0055,
+        0.00020833333333333335,
+        0.0004166666666666667,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        8.992805755395684e-05,
+        0.0,
+        0.0017857142857142857,
+        0.0,
+        0.0035714285714285713,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.2621481761958854e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.398081534772182e-05,
+        0.0,
+        0.0,
+        1.7985611510791367e-05,
+        8.992805755395684e-05,
+        1.0,
+        0.0,
+        0.0,
+        4.691898654989052e-05,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.000588235294117647,
+        0.000588235294117647,
+        0.00024509803921568627,
+        0.0,
+        0.0,
+        0.00035014005602240897,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0014005602240896359,
+        0.0,
+        0.0010504201680672268,
+        0.0
       ],
       [
         0.0,
@@ -3810,121 +4246,21 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
+        0.0,
+        0.0,
+        0.0017857142857142857,
+        0.0,
+        0.0014005602240896359,
         1.0,
         0.0,
-        0.0,
-        0.0,
-        0.00035014005602240897,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0004385964912280702,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.00025,
-        0.0,
-        0.0,
-        0.00026595744680851064,
-        0.0,
-        1.0,
-        0.0,
-        1.785714285714286e-05,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0005681818181818182
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0005,
-        0.0005,
-        0.0,
-        0.0004166666666666667,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        5.357142857142857e-05,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        1.2531328320802006e-05,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        2.380952380952381e-05,
-        0.0,
-        0.0,
-        1.785714285714286e-05,
-        5.357142857142857e-05,
-        1.0,
-        0.0,
-        0.0,
-        4.658385093167702e-05,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.000588235294117647,
-        0.0002941176470588235,
-        0.0,
-        0.0,
-        0.0,
-        0.00035014005602240897,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0008503401360544217,
+        0.00510204081632653,
         0.0
       ],
       [
         0.0,
         0.0,
         0.00038138825324180017,
-        0.0,
+        0.00031969309462915604,
         0.0004347826086956522,
         0.0,
         0.0,
@@ -3933,7 +4269,7 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0,
-        4.658385093167702e-05,
+        4.691898654989052e-05,
         0.0,
         0.0,
         1.0,
@@ -3944,34 +4280,34 @@ const REPORT_DATA = {
         0.0,
         0.0,
         0.0003132832080200501,
+        0.0010504201680672268,
+        0.002142857142857143,
         0.0,
-        0.0007142857142857143,
+        0.0005952380952380953,
+        0.0011904761904761906,
         0.0,
+        0.00042517006802721087,
         0.0,
+        0.0035714285714285713,
         0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0008503401360544217,
+        0.0010504201680672268,
+        0.00510204081632653,
         0.0,
         1.0,
         0.0
       ],
       [
-        0.0007974481658692185,
+        0.003043831168831169,
+        0.0,
+        0.0,
+        0.00033422459893048126,
+        0.00045454545454545455,
         0.0,
         0.0,
         0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.00024177949709864604,
-        0.0,
-        0.0005681818181818182,
+        0.009912959381044487,
+        0.0008116883116883117,
+        0.003409090909090909,
         0.0,
         0.0,
         0.0,
@@ -3981,9 +4317,320 @@ const REPORT_DATA = {
         1.0
       ]
     ]
+  },
+  "clusters": {
+    "method": "louvain",
+    "min_confidence": 0.5,
+    "min_edge_ratio": 0.07,
+    "min_edge_weight": 0.0006939071566731142,
+    "max_affinity": 0.009912959381044487,
+    "isolated_communities": [
+      "beauty",
+      "fortune",
+      "nanpa"
+    ],
+    "clusters": [
+      {
+        "cluster_id": 1,
+        "communities": [
+          "education",
+          "engineer",
+          "food",
+          "muscle",
+          "photo",
+          "politics",
+          "startup"
+        ],
+        "internal_weight_sum": 0.024221088435374148,
+        "strongest_edges": [
+          {
+            "community_a": "food",
+            "community_b": "muscle",
+            "affinity": 0.0055,
+            "a_follows_b_count": 18,
+            "b_follows_a_count": 4
+          },
+          {
+            "community_a": "politics",
+            "community_b": "startup",
+            "affinity": 0.00510204081632653,
+            "a_follows_b_count": 6,
+            "b_follows_a_count": 0
+          },
+          {
+            "community_a": "muscle",
+            "community_b": "startup",
+            "affinity": 0.0035714285714285713,
+            "a_follows_b_count": 8,
+            "b_follows_a_count": 0
+          },
+          {
+            "community_a": "engineer",
+            "community_b": "startup",
+            "affinity": 0.002142857142857143,
+            "a_follows_b_count": 2,
+            "b_follows_a_count": 1
+          },
+          {
+            "community_a": "muscle",
+            "community_b": "politics",
+            "affinity": 0.0017857142857142857,
+            "a_follows_b_count": 3,
+            "b_follows_a_count": 0
+          }
+        ],
+        "representative_accounts": [
+          {
+            "user_id": "sn:takapon_jp",
+            "screen_name": "takapon_jp",
+            "display_name": "takapon_jp",
+            "followers_count": 3310513,
+            "community_ids": [
+              "startup"
+            ]
+          },
+          {
+            "user_id": "sn:ore825",
+            "screen_name": "ore825",
+            "display_name": "ore825",
+            "followers_count": 2970142,
+            "community_ids": [
+              "food"
+            ]
+          },
+          {
+            "user_id": "sn:konotarogomame",
+            "screen_name": "konotarogomame",
+            "display_name": "konotarogomame",
+            "followers_count": 2357902,
+            "community_ids": [
+              "politics"
+            ]
+          },
+          {
+            "user_id": "sn:badassceo",
+            "screen_name": "badassceo",
+            "display_name": "badassceo",
+            "followers_count": 2095510,
+            "community_ids": [
+              "muscle"
+            ]
+          },
+          {
+            "user_id": "770682888",
+            "screen_name": "gintamamovie",
+            "display_name": "gintamamovie",
+            "followers_count": 808162,
+            "community_ids": [
+              "education"
+            ]
+          },
+          {
+            "user_id": "sn:tanaka_tatsuya",
+            "screen_name": "tanaka_tatsuya",
+            "display_name": "tanaka_tatsuya",
+            "followers_count": 637403,
+            "community_ids": [
+              "photo"
+            ]
+          }
+        ]
+      },
+      {
+        "cluster_id": 2,
+        "communities": [
+          "anime",
+          "gaming",
+          "host",
+          "idol",
+          "vtuber"
+        ],
+        "internal_weight_sum": 0.019495198949986182,
+        "strongest_edges": [
+          {
+            "community_a": "gaming",
+            "community_b": "vtuber",
+            "affinity": 0.009912959381044487,
+            "a_follows_b_count": 21,
+            "b_follows_a_count": 20
+          },
+          {
+            "community_a": "idol",
+            "community_b": "vtuber",
+            "affinity": 0.003409090909090909,
+            "a_follows_b_count": 9,
+            "b_follows_a_count": 3
+          },
+          {
+            "community_a": "anime",
+            "community_b": "vtuber",
+            "affinity": 0.003043831168831169,
+            "a_follows_b_count": 7,
+            "b_follows_a_count": 8
+          },
+          {
+            "community_a": "anime",
+            "community_b": "gaming",
+            "affinity": 0.001519756838905775,
+            "a_follows_b_count": 4,
+            "b_follows_a_count": 4
+          },
+          {
+            "community_a": "host",
+            "community_b": "vtuber",
+            "affinity": 0.0008116883116883117,
+            "a_follows_b_count": 3,
+            "b_follows_a_count": 0
+          }
+        ],
+        "representative_accounts": [
+          {
+            "user_id": "sn:PlayApex",
+            "screen_name": "PlayApex",
+            "display_name": "PlayApex",
+            "followers_count": 3990089,
+            "community_ids": [
+              "gaming"
+            ]
+          },
+          {
+            "user_id": "sn:Un4v5s8bgsVk9Xp",
+            "screen_name": "Un4v5s8bgsVk9Xp",
+            "display_name": "Un4v5s8bgsVk9Xp",
+            "followers_count": 3568185,
+            "community_ids": [
+              "anime"
+            ]
+          },
+          {
+            "user_id": "sn:345__chan",
+            "screen_name": "345__chan",
+            "display_name": "345__chan",
+            "followers_count": 3127896,
+            "community_ids": [
+              "idol"
+            ]
+          },
+          {
+            "user_id": "950967576980422657",
+            "screen_name": "nijisanji_app",
+            "display_name": "nijisanji_app",
+            "followers_count": 2038935,
+            "community_ids": [
+              "vtuber"
+            ]
+          },
+          {
+            "user_id": "sn:roland_0fficial",
+            "screen_name": "roland_0fficial",
+            "display_name": "roland_0fficial",
+            "followers_count": 1016004,
+            "community_ids": [
+              "host"
+            ]
+          },
+          {
+            "user_id": "sn:horikoshiko",
+            "screen_name": "horikoshiko",
+            "display_name": "horikoshiko",
+            "followers_count": 3253164,
+            "community_ids": [
+              "anime"
+            ]
+          }
+        ]
+      },
+      {
+        "cluster_id": 3,
+        "communities": [
+          "crypto",
+          "fx_traders",
+          "sedori"
+        ],
+        "internal_weight_sum": 0.0026188660055936944,
+        "strongest_edges": [
+          {
+            "community_a": "fx_traders",
+            "community_b": "sedori",
+            "affinity": 0.0014492753623188406,
+            "a_follows_b_count": 0,
+            "b_follows_a_count": 4
+          },
+          {
+            "community_a": "crypto",
+            "community_b": "fx_traders",
+            "affinity": 0.0011695906432748538,
+            "a_follows_b_count": 0,
+            "b_follows_a_count": 4
+          }
+        ],
+        "representative_accounts": [
+          {
+            "user_id": "438845624",
+            "screen_name": "yocchan60",
+            "display_name": "yocchan60",
+            "followers_count": 217158,
+            "community_ids": [
+              "crypto",
+              "fx_traders"
+            ]
+          },
+          {
+            "user_id": "1196711098851811328",
+            "screen_name": "nijisanji_goods",
+            "display_name": "nijisanji_goods",
+            "followers_count": 107174,
+            "community_ids": [
+              "sedori"
+            ]
+          },
+          {
+            "user_id": "755374542982291456",
+            "screen_name": "coinpicksjapan",
+            "display_name": "coinpicksjapan",
+            "followers_count": 88261,
+            "community_ids": [
+              "crypto",
+              "fx_traders"
+            ]
+          },
+          {
+            "user_id": "882620814821961729",
+            "screen_name": "reinabb3",
+            "display_name": "reinabb3",
+            "followers_count": 46373,
+            "community_ids": [
+              "crypto",
+              "fx_traders"
+            ]
+          },
+          {
+            "user_id": "1564752049199550464",
+            "screen_name": "ngg_japan",
+            "display_name": "ngg_japan",
+            "followers_count": 38036,
+            "community_ids": [
+              "crypto",
+              "fx_traders"
+            ]
+          },
+          {
+            "user_id": "114557496",
+            "screen_name": "CryptoXMessi",
+            "display_name": "CryptoXMessi",
+            "followers_count": 3594032,
+            "community_ids": [
+              "crypto"
+            ]
+          }
+        ]
+      }
+    ]
   }
 };
 // __REPORT_DATA_END__
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
   return String(n);
 }
@@ -3997,7 +4644,216 @@ function heatClass(val) {
   return 'heat-0';
 }
 
-const BAR_COLORS = ['bar-fill-red','bar-fill-blue','bar-fill-green','bar-fill-purple','bar-fill-yellow'];
+const BAR_COLORS = ['bar-fill-red', 'bar-fill-blue', 'bar-fill-green', 'bar-fill-purple', 'bar-fill-yellow'];
+const CLUSTER_COLORS = ['#ff6b6b', '#1d9bf0', '#4ade80', '#fbbf24', '#c084fc', '#2dd4bf', '#f97316', '#e879f9'];
+
+function buildNameMap(communities) {
+  const map = {};
+  communities.forEach(c => { map[c.community_id] = c.community_name; });
+  return map;
+}
+
+function buildClusterStyleMap(clusterData) {
+  const styleMap = {};
+  (clusterData?.clusters || []).forEach((cluster, index) => {
+    const color = CLUSTER_COLORS[index % CLUSTER_COLORS.length];
+    cluster.communities.forEach(cid => {
+      styleMap[cid] = { color, label: `Cluster ${cluster.cluster_id}` };
+    });
+  });
+  (clusterData?.isolated_communities || []).forEach(cid => {
+    styleMap[cid] = { color: '#6b7280', label: 'Isolated' };
+  });
+  return styleMap;
+}
+
+function renderClusterTab(communities, clusterData) {
+  const summary = document.getElementById('cluster-summary');
+  const list = document.getElementById('cluster-list');
+  if (!summary || !list) return;
+
+  const nameMap = buildNameMap(communities);
+  const clusters = clusterData?.clusters || [];
+  const isolated = clusterData?.isolated_communities || [];
+  const method = clusterData?.method || '-';
+  const threshold = clusterData?.min_edge_weight || 0;
+
+  summary.innerHTML = `
+    <div class="cluster-panel">
+      <div class="eyebrow">Method</div>
+      <div class="value">${method}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Clusters</div>
+      <div class="value">${clusters.length}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Isolated</div>
+      <div class="value">${isolated.length}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Threshold</div>
+      <div class="value">${(threshold * 1000).toFixed(3)}‰</div>
+    </div>
+  `;
+
+  list.innerHTML = '';
+  clusters.forEach((cluster, index) => {
+    const color = CLUSTER_COLORS[index % CLUSTER_COLORS.length];
+    const membersHtml = cluster.communities.map(cid => (
+      `<span class="chip" style="border-color:${color}55;background:${color}22;color:${color};">${nameMap[cid] || cid}</span>`
+    )).join('');
+    const repsHtml = (cluster.representative_accounts || []).length
+      ? `
+        <div class="cluster-section-title">Representative Accounts</div>
+        <div class="rep-list">
+          ${cluster.representative_accounts.map(account => {
+            const label = account.display_name ? `${account.display_name} / @${account.screen_name}` : `@${account.screen_name}`;
+            const coverage = account.community_ids.map(cid => nameMap[cid] || cid).join(' / ');
+            return `
+              <div class="rep-item">
+                <div class="rep-name"><a href="https://x.com/${account.screen_name}" target="_blank" rel="noreferrer">${label}</a></div>
+                <div class="rep-meta">${formatNum(account.followers_count)} FL · ${coverage}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `
+      : '';
+    const linksHtml = (cluster.strongest_edges || []).length
+      ? cluster.strongest_edges.map(edge => (
+          `<div class="cluster-link-row">
+            <span>${nameMap[edge.community_a] || edge.community_a} × ${nameMap[edge.community_b] || edge.community_b}</span>
+            <span>${(edge.affinity * 1000).toFixed(3)}‰</span>
+          </div>`
+        )).join('')
+      : '<div class="cluster-empty">強い内部リンクはありません</div>';
+
+    list.innerHTML += `
+      <section class="cluster-card">
+        <div class="cluster-header">
+          <div class="cluster-title" style="color:${color};">Cluster ${cluster.cluster_id}</div>
+          <div class="cluster-weight">内部親和度 ${(cluster.internal_weight_sum * 1000).toFixed(3)}‰</div>
+        </div>
+        <div class="member-chips">${membersHtml}</div>
+        ${repsHtml}
+        <div class="cluster-section-title">Strongest Links</div>
+        <div class="cluster-links">${linksHtml}</div>
+      </section>
+    `;
+  });
+
+  if (isolated.length > 0) {
+    const isolatedHtml = isolated.map(cid => (
+      `<span class="chip" style="border-color:#4b5563;background:#111827;color:#9ca3af;">${nameMap[cid] || cid}</span>`
+    )).join('');
+    list.innerHTML += `
+      <section class="cluster-card isolated">
+        <div class="cluster-header">
+          <div class="cluster-title" style="color:#9ca3af;">Isolated</div>
+          <div class="cluster-weight">単独クラスタ</div>
+        </div>
+        <div class="member-chips">${isolatedHtml}</div>
+        <div class="cluster-empty">現状の親和度しきい値では他界隈との結線が弱い界隈です。</div>
+      </section>
+    `;
+  }
+}
+
+function renderNetworkGraph(communities, affinities, clusterData) {
+  const canvas = document.getElementById('network-canvas');
+  if (!canvas || affinities.length === 0) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const nameMap = buildNameMap(communities);
+  const sizeMap = {};
+  const clusterStyleMap = buildClusterStyleMap(clusterData);
+  communities.forEach(c => { sizeMap[c.community_id] = c.member_count; });
+
+  const nodeIds = Object.keys(nameMap);
+  const nodes = nodeIds.map((id, index) => ({
+    id,
+    name: nameMap[id],
+    color: clusterStyleMap[id]?.color || CLUSTER_COLORS[index % CLUSTER_COLORS.length],
+    size: Math.max(8, Math.min(Math.sqrt(sizeMap[id] || 10) * 3, 40)),
+    x: W / 2 + Math.cos(index * 2 * Math.PI / nodeIds.length) * 250,
+    y: H / 2 + Math.sin(index * 2 * Math.PI / nodeIds.length) * 200,
+    vx: 0,
+    vy: 0,
+  }));
+  const nodeMap = {};
+  nodes.forEach(node => { nodeMap[node.id] = node; });
+
+  const maxAff = Math.max(...affinities.map(a => a.affinity));
+  const edges = affinities.slice(0, 30).map(a => ({
+    source: nodeMap[a.community_a],
+    target: nodeMap[a.community_b],
+    weight: a.affinity / maxAff,
+  })).filter(edge => edge.source && edge.target);
+
+  for (let iter = 0; iter < 200; iter++) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[j].x - nodes[i].x;
+        const dy = nodes[j].y - nodes[i].y;
+        const d = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const force = 5000 / (d * d);
+        nodes[i].vx -= dx / d * force;
+        nodes[i].vy -= dy / d * force;
+        nodes[j].vx += dx / d * force;
+        nodes[j].vy += dy / d * force;
+      }
+    }
+
+    edges.forEach(edge => {
+      const dx = edge.target.x - edge.source.x;
+      const dy = edge.target.y - edge.source.y;
+      const d = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+      const force = (d - 150) * 0.01 * (edge.weight + 0.1);
+      edge.source.vx += dx / d * force;
+      edge.source.vy += dy / d * force;
+      edge.target.vx -= dx / d * force;
+      edge.target.vy -= dy / d * force;
+    });
+
+    nodes.forEach(node => {
+      node.vx += (W / 2 - node.x) * 0.005;
+      node.vy += (H / 2 - node.y) * 0.005;
+      node.vx *= 0.8;
+      node.vy *= 0.8;
+      node.x += node.vx;
+      node.y += node.vy;
+      node.x = Math.max(30, Math.min(W - 30, node.x));
+      node.y = Math.max(30, Math.min(H - 30, node.y));
+    });
+  }
+
+  ctx.clearRect(0, 0, W, H);
+  edges.forEach(edge => {
+    ctx.beginPath();
+    ctx.moveTo(edge.source.x, edge.source.y);
+    ctx.lineTo(edge.target.x, edge.target.y);
+    ctx.strokeStyle = `rgba(255,107,107,${0.2 + edge.weight * 0.6})`;
+    ctx.lineWidth = 1 + edge.weight * 4;
+    ctx.stroke();
+  });
+
+  nodes.forEach(node => {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+    ctx.fillStyle = node.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#e0e0e0';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.name, node.x, node.y + node.size + 14);
+  });
+}
 
 function render(data) {
   if (!data || !data.communities || data.communities.length === 0) {
@@ -4008,10 +4864,13 @@ function render(data) {
   const communities = data.communities;
   const overlaps = data.overlaps || [];
   const matrix = data.overlap_matrix || {};
+  const affinities = data.affinities || [];
+  const affMatrix = data.affinity_matrix || {};
+  const clusters = data.clusters || {};
+  const nameMap = buildNameMap(communities);
 
-  // Stats
-  const totalMembers = communities.reduce((s, c) => s + c.member_count, 0);
-  const totalReach = communities.reduce((s, c) => s + c.total_followers_reach, 0);
+  const totalMembers = communities.reduce((sum, community) => sum + community.member_count, 0);
+  const totalReach = communities.reduce((sum, community) => sum + community.total_followers_reach, 0);
   const maxJaccard = overlaps.length > 0 ? Math.max(...overlaps.map(o => o.jaccard)) : 0;
 
   document.getElementById('stat-communities').textContent = communities.length;
@@ -4019,42 +4878,32 @@ function render(data) {
   document.getElementById('stat-total-reach').textContent = formatNum(totalReach);
   document.getElementById('stat-max-overlap').textContent = maxJaccard.toFixed(3);
 
-  // Size table
   const sizeBody = document.getElementById('size-table');
-  communities.forEach((c, i) => {
-    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
-    const sizeBadge = c.member_count >= 1000 ? 'badge-large' :
-                      c.member_count >= 300 ? 'badge-medium' : 'badge-small';
+  communities.forEach((community, index) => {
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1;
     sizeBody.innerHTML += `<tr>
       <td class="rank">${medal}</td>
-      <td><div class="community-name">${c.community_name}</div>
-          <div class="community-desc">${c.community_id}</div></td>
-      <td class="num num-highlight">${c.member_count.toLocaleString()}</td>
-      <td class="num">${c.active_member_count.toLocaleString()}</td>
-      <td class="num num-blue">${formatNum(c.total_followers_reach)}</td>
-      <td class="num">${formatNum(c.median_followers)}</td>
-      <td class="num">${c.influencer_count}</td>
+      <td><div class="community-name">${community.community_name}</div>
+          <div class="community-desc">${community.community_id}</div></td>
+      <td class="num num-highlight">${community.member_count.toLocaleString()}</td>
+      <td class="num">${community.active_member_count.toLocaleString()}</td>
+      <td class="num num-blue">${formatNum(community.total_followers_reach)}</td>
+      <td class="num">${formatNum(community.median_followers)}</td>
+      <td class="num">${community.influencer_count}</td>
     </tr>`;
   });
 
-  // Overlap matrix
   if (matrix.community_ids && matrix.community_ids.length > 1) {
-    const ids = matrix.community_ids;
-    const nameMap = {};
-    communities.forEach(c => { nameMap[c.community_id] = c.community_name; });
-
     let html = '<thead><tr><th></th>';
-    ids.forEach(id => { html += `<th>${nameMap[id] || id}</th>`; });
+    matrix.community_ids.forEach(id => { html += `<th>${nameMap[id] || id}</th>`; });
     html += '</tr></thead><tbody>';
-    ids.forEach((rowId, i) => {
+    matrix.community_ids.forEach((rowId, i) => {
       html += `<tr><th>${nameMap[rowId] || rowId}</th>`;
-      ids.forEach((colId, j) => {
-        const val = matrix.matrix[i][j];
-        if (i === j) {
-          html += '<td class="self">-</td>';
-        } else {
-          html += `<td class="${heatClass(val)}">${val.toFixed(3)}</td>`;
-        }
+      matrix.community_ids.forEach((colId, j) => {
+        const value = matrix.matrix[i][j];
+        html += i === j
+          ? '<td class="self">-</td>'
+          : `<td class="${heatClass(value)}">${value.toFixed(3)}</td>`;
       });
       html += '</tr>';
     });
@@ -4062,27 +4911,25 @@ function render(data) {
     document.getElementById('overlap-matrix').innerHTML = html;
   }
 
-  // Size chart (bar chart)
   const maxCount = Math.max(...communities.map(c => c.member_count));
   const chartDiv = document.getElementById('size-chart');
-  communities.forEach((c, i) => {
-    const pct = (c.member_count / maxCount * 100).toFixed(1);
-    const color = BAR_COLORS[i % BAR_COLORS.length];
+  communities.forEach((community, index) => {
+    const pct = (community.member_count / maxCount * 100).toFixed(1);
+    const color = BAR_COLORS[index % BAR_COLORS.length];
     chartDiv.innerHTML += `<div class="bar-row">
-      <div class="bar-label">${c.community_name}</div>
+      <div class="bar-label">${community.community_name}</div>
       <div class="bar-track">
-        <div class="bar-fill ${color}" style="width:${pct}%">${c.member_count.toLocaleString()}</div>
+        <div class="bar-fill ${color}" style="width:${pct}%">${community.member_count.toLocaleString()}</div>
       </div>
     </div>`;
   });
 
-  // Influencers
-  const infDiv = document.getElementById('influencer-list');
-  communities.forEach(c => {
-    if (!c.top_influencers || c.top_influencers.length === 0) return;
-    infDiv.innerHTML += `<h3 style="margin:20px 0 10px;color:#ff6b6b;">${c.community_name}</h3>`;
-    c.top_influencers.slice(0, 5).forEach(inf => {
-      infDiv.innerHTML += `<div class="influencer">
+  const influencerList = document.getElementById('influencer-list');
+  communities.forEach(community => {
+    if (!community.top_influencers || community.top_influencers.length === 0) return;
+    influencerList.innerHTML += `<h3 style="margin:20px 0 10px;color:#ff6b6b;">${community.community_name}</h3>`;
+    community.top_influencers.slice(0, 5).forEach(inf => {
+      influencerList.innerHTML += `<div class="influencer">
         <div class="info">
           <div class="name"><a href="https://x.com/${inf.screen_name}" target="_blank">@${inf.screen_name}</a>
             ${inf.display_name ? ' — ' + inf.display_name : ''}</div>
@@ -4093,61 +4940,42 @@ function render(data) {
     });
   });
 
-  // Overlap details
   const overlapBody = document.getElementById('overlap-table');
-  const nameMap2 = {};
-  communities.forEach(c => { nameMap2[c.community_id] = c.community_name; });
-  overlaps.forEach(o => {
+  overlaps.forEach(overlap => {
     overlapBody.innerHTML += `<tr>
-      <td>${nameMap2[o.community_a] || o.community_a}</td>
-      <td>${nameMap2[o.community_b] || o.community_b}</td>
-      <td class="num num-highlight">${o.intersection_count.toLocaleString()}</td>
-      <td class="num">${o.jaccard.toFixed(3)}</td>
-      <td class="num">${(o.containment_a_in_b * 100).toFixed(1)}%</td>
-      <td class="num">${(o.containment_b_in_a * 100).toFixed(1)}%</td>
+      <td>${nameMap[overlap.community_a] || overlap.community_a}</td>
+      <td>${nameMap[overlap.community_b] || overlap.community_b}</td>
+      <td class="num num-highlight">${overlap.intersection_count.toLocaleString()}</td>
+      <td class="num">${overlap.jaccard.toFixed(3)}</td>
+      <td class="num">${(overlap.containment_a_in_b * 100).toFixed(1)}%</td>
+      <td class="num">${(overlap.containment_b_in_a * 100).toFixed(1)}%</td>
     </tr>`;
   });
 
-  // Follow affinity table
-  const affinities = data.affinities || [];
   const affinityBody = document.getElementById('affinity-table');
-  if (affinityBody && affinities.length > 0) {
-    const nameMap3 = {};
-    communities.forEach(c => { nameMap3[c.community_id] = c.community_name; });
-    affinities.forEach(a => {
-      affinityBody.innerHTML += `<tr>
-        <td>${nameMap3[a.community_a] || a.community_a}</td>
-        <td>${nameMap3[a.community_b] || a.community_b}</td>
-        <td class="num">${a.a_follows_b_count}</td>
-        <td class="num">${a.b_follows_a_count}</td>
-        <td class="num num-highlight">${(a.affinity * 1000).toFixed(3)}‰</td>
-      </tr>`;
-    });
+  affinities.forEach(affinity => {
+    affinityBody.innerHTML += `<tr>
+      <td>${nameMap[affinity.community_a] || affinity.community_a}</td>
+      <td>${nameMap[affinity.community_b] || affinity.community_b}</td>
+      <td class="num">${affinity.a_follows_b_count}</td>
+      <td class="num">${affinity.b_follows_a_count}</td>
+      <td class="num num-highlight">${(affinity.affinity * 1000).toFixed(3)}‰</td>
+    </tr>`;
+  });
 
-    // Update stat card with affinity count
-    document.getElementById('stat-max-overlap').textContent = affinities.length;
-    document.querySelector('#stat-max-overlap + .label, #stats .stat-card:last-child .label').textContent = '親和ペア数';
-  }
-
-  // Affinity matrix
-  const affMatrix = data.affinity_matrix || {};
   if (affMatrix.community_ids && affMatrix.community_ids.length > 1) {
-    const ids = affMatrix.community_ids;
-    const nameMap4 = {};
-    communities.forEach(c => { nameMap4[c.community_id] = c.community_name; });
-
     let html = '<thead><tr><th></th>';
-    ids.forEach(id => { html += `<th>${nameMap4[id] || id}</th>`; });
+    affMatrix.community_ids.forEach(id => { html += `<th>${nameMap[id] || id}</th>`; });
     html += '</tr></thead><tbody>';
-    ids.forEach((rowId, i) => {
-      html += `<tr><th>${nameMap4[rowId] || rowId}</th>`;
-      ids.forEach((colId, j) => {
-        const val = affMatrix.matrix[i][j];
+    affMatrix.community_ids.forEach((rowId, i) => {
+      html += `<tr><th>${nameMap[rowId] || rowId}</th>`;
+      affMatrix.community_ids.forEach((colId, j) => {
+        const value = affMatrix.matrix[i][j];
         if (i === j) {
           html += '<td class="self">-</td>';
         } else {
-          const scaledVal = Math.min(val * 5000, 1); // scale for heatmap coloring
-          html += `<td class="${heatClass(scaledVal)}">${val > 0 ? (val * 1000).toFixed(3) : '0'}</td>`;
+          const scaledValue = Math.min(value * 5000, 1);
+          html += `<td class="${heatClass(scaledValue)}">${value > 0 ? (value * 1000).toFixed(3) : '0'}</td>`;
         }
       });
       html += '</tr>';
@@ -4155,122 +4983,18 @@ function render(data) {
     html += '</tbody>';
     document.getElementById('affinity-matrix').innerHTML = html;
   }
+
+  renderClusterTab(communities, clusters);
+  renderNetworkGraph(communities, affinities, clusters);
 }
 
-  // Network graph (force-directed on Canvas)
-  const canvas = document.getElementById('network-canvas');
-  if (canvas && affinities.length > 0) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    const nameMap5 = {};
-    const sizeMap = {};
-    communities.forEach(c => {
-      nameMap5[c.community_id] = c.community_name;
-      sizeMap[c.community_id] = c.member_count;
-    });
-
-    // Build nodes
-    const nodeIds = Object.keys(nameMap5);
-    const nodes = nodeIds.map((id, i) => ({
-      id, name: nameMap5[id],
-      size: Math.max(8, Math.min(Math.sqrt(sizeMap[id] || 10) * 3, 40)),
-      x: W/2 + (Math.cos(i * 2 * Math.PI / nodeIds.length)) * 250,
-      y: H/2 + (Math.sin(i * 2 * Math.PI / nodeIds.length)) * 200,
-      vx: 0, vy: 0,
-    }));
-    const nodeMap = {};
-    nodes.forEach(n => nodeMap[n.id] = n);
-
-    // Build edges (only top 30 by affinity)
-    const maxAff = Math.max(...affinities.map(a => a.affinity));
-    const edges = affinities.slice(0, 30).map(a => ({
-      source: nodeMap[a.community_a],
-      target: nodeMap[a.community_b],
-      weight: a.affinity / maxAff,
-      count: a.a_follows_b_count + a.b_follows_a_count,
-    })).filter(e => e.source && e.target);
-
-    const COLORS = ['#ff6b6b','#1d9bf0','#4ade80','#fbbf24','#c084fc','#2dd4bf',
-      '#f97316','#e879f9','#38bdf8','#a3e635','#fb923c','#818cf8',
-      '#f472b6','#34d399','#facc15','#a78bfa','#f87171','#22d3ee'];
-
-    // Simple force simulation
-    function simulate() {
-      for (let iter = 0; iter < 200; iter++) {
-        // Repulsion between all nodes
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i+1; j < nodes.length; j++) {
-            let dx = nodes[j].x - nodes[i].x;
-            let dy = nodes[j].y - nodes[i].y;
-            let d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
-            let force = 5000 / (d * d);
-            nodes[i].vx -= dx/d * force;
-            nodes[i].vy -= dy/d * force;
-            nodes[j].vx += dx/d * force;
-            nodes[j].vy += dy/d * force;
-          }
-        }
-        // Attraction along edges
-        edges.forEach(e => {
-          let dx = e.target.x - e.source.x;
-          let dy = e.target.y - e.source.y;
-          let d = Math.sqrt(dx*dx + dy*dy);
-          let force = (d - 150) * 0.01 * (e.weight + 0.1);
-          e.source.vx += dx/d * force;
-          e.source.vy += dy/d * force;
-          e.target.vx -= dx/d * force;
-          e.target.vy -= dy/d * force;
-        });
-        // Center gravity
-        nodes.forEach(n => {
-          n.vx += (W/2 - n.x) * 0.005;
-          n.vy += (H/2 - n.y) * 0.005;
-          n.vx *= 0.8; n.vy *= 0.8;
-          n.x += n.vx; n.y += n.vy;
-          n.x = Math.max(30, Math.min(W-30, n.x));
-          n.y = Math.max(30, Math.min(H-30, n.y));
-        });
-      }
-    }
-    simulate();
-
-    // Draw
-    ctx.clearRect(0, 0, W, H);
-    // Edges
-    edges.forEach(e => {
-      ctx.beginPath();
-      ctx.moveTo(e.source.x, e.source.y);
-      ctx.lineTo(e.target.x, e.target.y);
-      ctx.strokeStyle = `rgba(255,107,107,${0.2 + e.weight * 0.6})`;
-      ctx.lineWidth = 1 + e.weight * 4;
-      ctx.stroke();
-    });
-    // Nodes
-    nodes.forEach((n, i) => {
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.size, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS[i % COLORS.length];
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      // Label
-      ctx.fillStyle = '#e0e0e0';
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(n.name, n.x, n.y + n.size + 14);
-    });
-  }
-}
-
-function switchTab(tab) {
+function switchTab(evt, tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
+  if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
 }
 
-// Init
 if (REPORT_DATA) {
   render(REPORT_DATA);
 } else {
