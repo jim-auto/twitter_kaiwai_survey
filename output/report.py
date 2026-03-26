@@ -1,123 +1,210 @@
-"""レポート生成"""
+"""Generate markdown/json reports for kaiwai analysis."""
+
+from __future__ import annotations
+
 import json
 from dataclasses import asdict
-from pathlib import Path
 
+from analysis.bridge_accounts import AttentionBridgeView, detect_bridge_accounts
 from analysis.clustering import detect_affinity_clusters
-from analysis.community_size import SizeMetrics, compute_all_sizes
-from analysis.overlap import OverlapResult, build_overlap_matrix, compute_pairwise_overlap
+from analysis.community_size import compute_all_sizes
+from analysis.overlap import build_overlap_matrix, compute_pairwise_overlap
 from config.settings import EXPORT_DIR
 
 
-def generate_report(min_confidence: float = 0.5):
-    """全界隈の規模 + 重複 + クラスタレポートを生成"""
+def _format_attention_account(account) -> str:
+    label = f"@{account.screen_name}" if account.screen_name else account.user_id
+    if account.display_name:
+        label = f"{label} / {account.display_name}"
+    communities = ", ".join(account.source_community_ids)
+    clusters = ", ".join(account.cluster_labels)
+    return (
+        f"- {label}: score={account.bridge_score:.3f}, "
+        f"communities={account.source_community_count}, clusters={account.cluster_count}, "
+        f"edges={account.follow_edge_count}, followers={account.followers_count:,} "
+        f"[{communities}] ({clusters})"
+    )
+
+
+def _format_member_account(account) -> str:
+    label = f"@{account.screen_name}" if account.screen_name else account.user_id
+    if account.display_name:
+        label = f"{label} / {account.display_name}"
+    communities = ", ".join(account.community_ids)
+    clusters = ", ".join(account.cluster_labels)
+    return (
+        f"- {label}: score={account.bridge_score:.3f}, "
+        f"communities={account.community_count}, clusters={account.cluster_count}, "
+        f"followers={account.followers_count:,} [{communities}] ({clusters})"
+    )
+
+
+def _write_attention_view_section(f, view: AttentionBridgeView, limit: int = 20) -> None:
+    f.write(f"\n### {view.label}\n\n")
+    f.write(f"- description: {view.description}\n")
+    if view.excluded_community_ids:
+        f.write(f"- excluded_communities: {', '.join(view.excluded_community_ids)}\n")
+    f.write(f"- attention_hubs: {view.attention_hub_count}\n")
+    f.write(f"- cross_cluster_attention_hubs: {view.cross_cluster_attention_hub_count}\n")
+
+    if view.attention_hubs:
+        f.write("\nTop accounts:\n")
+        for account in view.attention_hubs[:limit]:
+            f.write(_format_attention_account(account) + "\n")
+    else:
+        f.write("\n- none\n")
+
+    if view.cluster_pairs:
+        f.write("\nTop cluster pairs:\n")
+        for pair in view.cluster_pairs[:10]:
+            reps = ", ".join(f"@{account.screen_name}" for account in pair.top_accounts[:3])
+            suffix = f" ({reps})" if reps else ""
+            f.write(f"- {pair.cluster_a} x {pair.cluster_b}: {pair.account_count} accounts{suffix}\n")
+    else:
+        f.write("\n- cluster_pairs: none\n")
+
+
+def generate_report(min_confidence: float = 0.5) -> None:
+    """Generate community report artifacts."""
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 規模メトリクス
     sizes = compute_all_sizes(min_confidence)
     overlaps = compute_pairwise_overlap(min_confidence)
     community_ids, matrix = build_overlap_matrix(min_confidence)
     clusters = detect_affinity_clusters(min_confidence=min_confidence)
+    bridges = detect_bridge_accounts(
+        min_confidence=min_confidence,
+        cluster_analysis=clusters,
+    )
 
-    # JSON出力
     report_data = {
         "min_confidence": min_confidence,
-        "communities": [asdict(s) for s in sizes],
-        "overlaps": [asdict(o) for o in overlaps],
+        "communities": [asdict(size) for size in sizes],
+        "overlaps": [asdict(overlap) for overlap in overlaps],
         "overlap_matrix": {
             "community_ids": community_ids,
             "matrix": matrix,
         },
         "clusters": asdict(clusters),
+        "bridges": asdict(bridges),
     }
+
     json_path = EXPORT_DIR / "report.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(report_data, f, ensure_ascii=False, indent=2)
+    json_path.write_text(
+        json.dumps(report_data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(f"[SAVE] {json_path}")
 
-    # Markdown出力
     md_path = EXPORT_DIR / "report.md"
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write("# Twitter 界隈調査レポート\n\n")
+    with md_path.open("w", encoding="utf-8") as f:
+        f.write("# Twitter Kaiwai Report\n")
+        f.write(f"\n- min_confidence: {min_confidence}\n")
 
-        # 規模テーブル
-        f.write("## 界隈規模\n\n")
-        f.write("| 界隈 | メンバー数 | アクティブ | 総リーチ | 中央値フォロワー | インフルエンサー |\n")
-        f.write("|------|-----------|-----------|---------|----------------|----------------|\n")
-        for s in sizes:
+        f.write("\n## Community Sizes\n\n")
+        f.write("| Community | Members | Active | Reach | Median FL | Influencers |\n")
+        f.write("|-----------|--------:|-------:|------:|----------:|------------:|\n")
+        for size in sizes:
             f.write(
-                f"| {s.community_name} | {s.member_count:,} | {s.active_member_count:,} "
-                f"| {s.total_followers_reach:,} | {s.median_followers:,} | {s.influencer_count} |\n"
+                f"| {size.community_name} | {size.member_count:,} | {size.active_member_count:,} "
+                f"| {size.total_followers_reach:,} | {size.median_followers:,} | {size.influencer_count} |\n"
             )
 
-        # 重複テーブル
         if overlaps:
-            f.write("\n## 界隈間の重複\n\n")
-            f.write("| 界隈A | 界隈B | 共通メンバー | Jaccard | A→B含有率 | B→A含有率 |\n")
-            f.write("|-------|-------|-------------|---------|----------|----------|\n")
-            for o in overlaps:
+            f.write("\n## Member Overlap\n\n")
+            f.write("| Community A | Community B | Shared | Jaccard | A in B | B in A |\n")
+            f.write("|-------------|-------------|-------:|--------:|-------:|-------:|\n")
+            for overlap in overlaps:
                 f.write(
-                    f"| {o.community_a} | {o.community_b} | {o.intersection_count:,} "
-                    f"| {o.jaccard:.3f} | {o.containment_a_in_b:.1%} | {o.containment_b_in_a:.1%} |\n"
+                    f"| {overlap.community_a} | {overlap.community_b} | {overlap.intersection_count:,} "
+                    f"| {overlap.jaccard:.3f} | {overlap.containment_a_in_b:.1%} | {overlap.containment_b_in_a:.1%} |\n"
                 )
 
-        f.write("\n## 界隈クラスタ（フォロー親和度ベース）\n\n")
+        f.write("\n## Affinity Clusters\n\n")
         f.write(
-            f"- 手法: {clusters.method}\n"
-            f"- 親和度しきい値: {clusters.min_edge_weight:.6f} "
+            f"- method: {clusters.method}\n"
+            f"- min_edge_weight: {clusters.min_edge_weight:.6f} "
             f"(max_affinity={clusters.max_affinity:.6f}, ratio={clusters.min_edge_ratio:.2f})\n"
         )
-        if clusters.clusters:
-            for cluster in clusters.clusters:
-                members = ", ".join(cluster.communities)
-                f.write(f"\n### Cluster {cluster.cluster_id}\n\n")
-                f.write(f"- 界隈: {members}\n")
-                f.write(f"- 内部親和度合計: {cluster.internal_weight_sum:.6f}\n")
-                if cluster.strongest_edges:
-                    f.write("- 強い結線:\n")
-                    for edge in cluster.strongest_edges:
-                        f.write(
-                            f"  - {edge.community_a} × {edge.community_b}: {edge.affinity:.6f} "
-                            f"({edge.a_follows_b_count}<->{edge.b_follows_a_count})\n"
-                        )
-                if cluster.representative_accounts:
-                    f.write("- 代表アカウント:\n")
-                    for account in cluster.representative_accounts:
-                        communities = ", ".join(account.community_ids)
-                        label = f"@{account.screen_name}" if account.screen_name else account.user_id
-                        display = f" / {account.display_name}" if account.display_name else ""
-                        f.write(
-                            f"  - {label}{display}: {account.followers_count:,} followers "
-                            f"[{communities}]\n"
-                        )
+        for cluster in clusters.clusters:
+            f.write(f"\n### Cluster {cluster.cluster_id}\n\n")
+            f.write(f"- communities: {', '.join(cluster.communities)}\n")
+            f.write(f"- internal_weight_sum: {cluster.internal_weight_sum:.6f}\n")
+            if cluster.strongest_edges:
+                f.write("- strongest_edges:\n")
+                for edge in cluster.strongest_edges:
+                    f.write(
+                        f"  - {edge.community_a} x {edge.community_b}: {edge.affinity:.6f} "
+                        f"({edge.a_follows_b_count}<->{edge.b_follows_a_count})\n"
+                    )
+            if cluster.representative_accounts:
+                f.write("- representative_accounts:\n")
+                for account in cluster.representative_accounts:
+                    communities = ", ".join(account.community_ids)
+                    label = f"@{account.screen_name}" if account.screen_name else account.user_id
+                    display = f" / {account.display_name}" if account.display_name else ""
+                    f.write(
+                        f"  - {label}{display}: {account.followers_count:,} followers "
+                        f"[{communities}]\n"
+                    )
         if clusters.isolated_communities:
             f.write("\n### Isolated\n\n")
             f.write(f"- {', '.join(clusters.isolated_communities)}\n")
 
-        # 各界隈のトップインフルエンサー
-        f.write("\n## トップインフルエンサー\n\n")
-        for s in sizes:
-            if s.top_influencers:
-                f.write(f"### {s.community_name}\n\n")
-                for inf in s.top_influencers[:5]:
-                    f.write(f"- @{inf['screen_name']} ({inf['followers_count']:,} followers) - {inf['bio']}\n")
-                f.write("\n")
+        f.write("\n## Bridge Accounts\n\n")
+        f.write(f"- shared_member_bridges: {bridges.member_bridge_account_count}\n")
+        f.write(f"- shared_member_cross_cluster: {bridges.cross_cluster_member_bridge_count}\n")
+        _write_attention_view_section(f, bridges.all_view)
+        _write_attention_view_section(f, bridges.no_nanpa_view)
+        _write_attention_view_section(f, bridges.frontier_view)
+        _write_attention_view_section(f, bridges.frontier_seed_view)
+
+        f.write("\n### Shared-Member Bridges\n\n")
+        if bridges.member_bridges:
+            for account in bridges.member_bridges[:10]:
+                f.write(_format_member_account(account) + "\n")
+        else:
+            f.write("- none\n")
+
+        f.write("\n## Top Influencers\n\n")
+        for size in sizes:
+            if not size.top_influencers:
+                continue
+            f.write(f"### {size.community_name}\n\n")
+            for influencer in size.top_influencers[:5]:
+                f.write(
+                    f"- @{influencer['screen_name']} "
+                    f"({influencer['followers_count']:,} followers) - {influencer['bio']}\n"
+                )
+            f.write("\n")
 
     print(f"[SAVE] {md_path}")
 
-    # コンソール出力
     print("\n" + "=" * 60)
-    print("界隈規模サマリ")
+    print("Kaiwai Summary")
     print("=" * 60)
-    for s in sizes:
-        print(f"  {s.community_name}: {s.member_count:,} メンバー, リーチ {s.total_followers_reach:,}")
+    for size in sizes:
+        print(
+            f"  {size.community_name}: members={size.member_count:,}, "
+            f"reach={size.total_followers_reach:,}"
+        )
     if overlaps:
-        print("\n界隈重複 TOP5:")
-        for o in overlaps[:5]:
-            print(f"  {o.community_a} × {o.community_b}: Jaccard={o.jaccard:.3f} (共通{o.intersection_count}人)")
+        print("\nTop overlap pairs:")
+        for overlap in overlaps[:5]:
+            print(
+                f"  {overlap.community_a} x {overlap.community_b}: "
+                f"Jaccard={overlap.jaccard:.3f} shared={overlap.intersection_count}"
+            )
     if clusters.clusters:
-        print("\n界隈クラスタ:")
+        print("\nClusters:")
         for cluster in clusters.clusters:
             print(f"  Cluster {cluster.cluster_id}: {', '.join(cluster.communities)}")
     if clusters.isolated_communities:
-        print(f"\n孤立界隈: {', '.join(clusters.isolated_communities)}")
+        print(f"\nIsolated: {', '.join(clusters.isolated_communities)}")
+    print(
+        "\nBridge views: "
+        f"all={bridges.attention_hub_count}, "
+        f"no_nanpa={bridges.no_nanpa_view.attention_hub_count}, "
+        f"frontier={bridges.frontier_view.attention_hub_count}, "
+        f"seed={bridges.frontier_seed_view.attention_hub_count}"
+    )

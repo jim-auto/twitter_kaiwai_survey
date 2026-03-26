@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from analysis.bridge_accounts import AttentionBridgeView, detect_bridge_accounts
 from analysis.clustering import detect_affinity_clusters
 from config.settings import DB_PATH, EXPORT_DIR
 
@@ -267,6 +268,44 @@ def format_named_line(names: dict[str, str], cid: str, suffix: str) -> str:
     return f"- {names.get(cid, cid)} (`{cid}`): {suffix}"
 
 
+def append_attention_view(
+    lines: list[str],
+    names: dict[str, str],
+    view: AttentionBridgeView,
+    limit: int = 8,
+) -> None:
+    lines.append(f"### {view.label}")
+    lines.append(f"- description: {view.description}")
+    if view.excluded_community_ids:
+        lines.append(f"- excluded_communities: `{', '.join(view.excluded_community_ids)}`")
+    lines.append(f"- attention_hubs: `{view.attention_hub_count}`")
+    lines.append(f"- cross_cluster_attention_hubs: `{view.cross_cluster_attention_hub_count}`")
+    if view.attention_hubs:
+        for row in view.attention_hubs[:limit]:
+            community_names = ", ".join(
+                f"{names[cid]} (`{cid}`)" for cid in row.source_community_ids
+            )
+            cluster_labels = ", ".join(f"`{label}`" for label in row.cluster_labels)
+            lines.append(
+                f"- @{row.screen_name} ({row.followers_count:,} followers): "
+                f"score={row.bridge_score:.3f}, communities={community_names}, "
+                f"clusters={cluster_labels}, edges={row.follow_edge_count}"
+            )
+    else:
+        lines.append("- None at this threshold")
+    if view.cluster_pairs:
+        lines.append("- top_cluster_pairs:")
+        for pair in view.cluster_pairs[:5]:
+            reps = ", ".join(f"@{account.screen_name}" for account in pair.top_accounts[:3])
+            lines.append(
+                f"-   `{pair.cluster_a}` x `{pair.cluster_b}`: {pair.account_count} accounts"
+                f"{f' ({reps})' if reps else ''}"
+            )
+    else:
+        lines.append("- top_cluster_pairs: none")
+    lines.append("")
+
+
 def build_report(
     conn: sqlite3.Connection,
     high_confidence: float,
@@ -285,9 +324,12 @@ def build_report(
     missing_profiles = compute_missing_profiles(high_members, users)
     total_missing_profiles = sum(row["missing_count"] for row in missing_profiles)
     clusters = detect_affinity_clusters(min_confidence=high_confidence)
+    bridge_analysis = detect_bridge_accounts(
+        min_confidence=high_confidence,
+        cluster_analysis=clusters,
+    )
 
     community_rows = cross_metrics["community_rows"]
-    bridges = cross_metrics["bridges"]
     bridge_targets = cross_metrics["bridge_targets"]
     asymmetry_rows = cross_metrics["asymmetry_rows"]
 
@@ -403,12 +445,53 @@ def build_report(
         ))
     lines.append("")
 
-    lines.append("### Bridge Users")
-    if bridges:
-        for row in bridges[:10]:
-            community_names = ", ".join(f"{names[cid]} (`{cid}`)" for cid in row["communities"])
+    lines.append("### Bridge Accounts")
+    lines.append(
+        f"- shared-member bridges: `{bridge_analysis.member_bridge_account_count}`"
+    )
+    lines.append(
+        f"- shared-member cross-cluster bridges: `{bridge_analysis.cross_cluster_member_bridge_count}`"
+    )
+    lines.append(
+        f"- all shared-attention hubs: `{bridge_analysis.attention_hub_count}`"
+    )
+    lines.append(
+        f"- no-nanpa shared-attention hubs: `{bridge_analysis.no_nanpa_view.attention_hub_count}`"
+    )
+    lines.append(
+        f"- frontier candidates: `{bridge_analysis.frontier_view.attention_hub_count}`"
+    )
+    lines.append(
+        f"- frontier seed candidates: `{bridge_analysis.frontier_seed_view.attention_hub_count}`"
+    )
+    lines.append("")
+
+    append_attention_view(lines, names, bridge_analysis.all_view, limit=10)
+    append_attention_view(lines, names, bridge_analysis.no_nanpa_view, limit=10)
+    append_attention_view(lines, names, bridge_analysis.frontier_view, limit=10)
+    append_attention_view(lines, names, bridge_analysis.frontier_seed_view, limit=10)
+    lines.append("")
+
+    lines.append("### Shared-Member Bridges")
+    if bridge_analysis.member_bridges:
+        for row in bridge_analysis.member_bridges[:8]:
+            community_names = ", ".join(f"{names[cid]} (`{cid}`)" for cid in row.community_ids)
+            cluster_labels = ", ".join(f"`{label}`" for label in row.cluster_labels)
             lines.append(
-                f"- @{row['screen_name']} ({row['followers_count']:,} followers): {community_names}"
+                f"- @{row.screen_name} ({row.followers_count:,} followers): "
+                f"score={row.bridge_score:.3f}, communities={community_names}, clusters={cluster_labels}"
+            )
+    else:
+        lines.append("- None at this threshold")
+    lines.append("")
+
+    lines.append("### Cross-Cluster Bridge Pairs")
+    if bridge_analysis.all_view.cluster_pairs:
+        for pair in bridge_analysis.all_view.cluster_pairs[:8]:
+            reps = ", ".join(f"@{account.screen_name}" for account in pair.top_accounts[:3])
+            lines.append(
+                f"- `{pair.cluster_a}` x `{pair.cluster_b}`: {pair.account_count} accounts"
+                f"{f' ({reps})' if reps else ''}"
             )
     else:
         lines.append("- None at this threshold")

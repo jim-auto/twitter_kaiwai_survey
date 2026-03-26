@@ -61,6 +61,8 @@ def compute_pairwise_overlap(
         intersection = set_a & set_b
         union = set_a | set_b
         inter_count = len(intersection)
+        if inter_count == 0:
+            continue
         union_count = len(union)
         results.append(OverlapResult(
             community_a=a, community_b=b,
@@ -69,7 +71,7 @@ def compute_pairwise_overlap(
             containment_a_in_b=inter_count / len(set_a) if set_a else 0.0,
             containment_b_in_a=inter_count / len(set_b) if set_b else 0.0,
         ))
-    results.sort(key=lambda r: r.jaccard, reverse=True)
+    results.sort(key=lambda r: (r.jaccard, r.intersection_count), reverse=True)
     return results
 
 
