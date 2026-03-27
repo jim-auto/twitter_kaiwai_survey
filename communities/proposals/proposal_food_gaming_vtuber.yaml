@@ -1,0 +1,44 @@
+id: proposal_food_gaming_vtuber
+name: "料理 グルメ x ゲーム x VTuber 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 11
+# total_follow_edges: 89
+# avg_bridge_score: 37.669
+# source_communities: food, gaming, vtuber
+
+seeds:
+  - username: hikakin
+    role: influencer
+  - username: room_vault
+    role: influencer
+  - username: shiromanta1020
+    role: active
+  - username: k4sen
+    role: active
+  - username: DJ_Foy_jp
+    role: active
+  - username: _amatsuki_
+    role: active
+  - username: Ayase_0404
+    role: active
+  - username: NyantakoGG
+    role: active
+
+hashtags: []
+
+keywords:
+  - "料理 グルメ ゲーム"
+  - "料理 グルメ VTuber"
+  - "ゲーム VTuber"
+  - "料理 グルメ ゲーム VTuber"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

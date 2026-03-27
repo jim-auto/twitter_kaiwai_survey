@@ -1,0 +1,44 @@
+id: proposal_crypto_fx_traders_politics
+name: "仮想通貨 Web3 x FX 投資 x 政治 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 8
+# total_follow_edges: 52
+# avg_bridge_score: 37.704
+# source_communities: crypto, fx_traders, politics
+
+seeds:
+  - username: hayashinaohiro
+    role: influencer
+  - username: tamakiyuichiro
+    role: influencer
+  - username: jinkamiya
+    role: active
+  - username: aotech6
+    role: active
+  - username: tabbata
+    role: active
+  - username: TAIRAMASAAKI
+    role: active
+  - username: ReHacQ
+    role: active
+  - username: smith796000
+    role: active
+
+hashtags: []
+
+keywords:
+  - "仮想通貨 Web3 FX 投資"
+  - "仮想通貨 Web3 政治"
+  - "FX 投資 政治"
+  - "仮想通貨 Web3 FX 投資 政治"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

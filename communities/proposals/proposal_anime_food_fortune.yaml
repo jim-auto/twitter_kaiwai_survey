@@ -1,0 +1,44 @@
+id: proposal_anime_food_fortune
+name: "アニメ 漫画 x 料理 グルメ x 占い スピリチュアル 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 8
+# total_follow_edges: 40
+# avg_bridge_score: 38.793
+# source_communities: anime, food, fortune
+
+seeds:
+  - username: H_KANNA_0203
+    role: influencer
+  - username: shoko55mmts
+    role: influencer
+  - username: 00_yuki_Y
+    role: active
+  - username: okazaki_taiiku
+    role: active
+  - username: YAMA414
+    role: active
+  - username: naoyainoue_410
+    role: active
+  - username: fukudamaki
+    role: active
+  - username: Computerozi
+    role: active
+
+hashtags: []
+
+keywords:
+  - "アニメ 漫画 料理 グルメ"
+  - "アニメ 漫画 占い スピリチュアル"
+  - "料理 グルメ 占い スピリチュアル"
+  - "アニメ 漫画 料理 グルメ 占い スピリチュアル"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

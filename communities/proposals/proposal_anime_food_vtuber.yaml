@@ -1,0 +1,44 @@
+id: proposal_anime_food_vtuber
+name: "アニメ 漫画 x 料理 グルメ x VTuber 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 17
+# total_follow_edges: 123
+# avg_bridge_score: 35.004
+# source_communities: anime, food, vtuber
+
+seeds:
+  - username: egutakuya
+    role: influencer
+  - username: room_vault
+    role: influencer
+  - username: shiromanta1020
+    role: active
+  - username: k4sen
+    role: active
+  - username: hachi_08
+    role: active
+  - username: Ryouhey_Drunk
+    role: active
+  - username: amasakikohei
+    role: active
+  - username: MitoTsukino
+    role: active
+
+hashtags: []
+
+keywords:
+  - "アニメ 漫画 料理 グルメ"
+  - "アニメ 漫画 VTuber"
+  - "料理 グルメ VTuber"
+  - "アニメ 漫画 料理 グルメ VTuber"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

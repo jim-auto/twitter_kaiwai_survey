@@ -1,0 +1,44 @@
+id: proposal_food_host_muscle
+name: "料理 グルメ x ホスト x 筋トレ 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 8
+# total_follow_edges: 59
+# avg_bridge_score: 37.792
+# source_communities: food, host, muscle
+
+seeds:
+  - username: fashionpressnet
+    role: media
+  - username: ngnchiikawa
+    role: influencer
+  - username: mineoka
+    role: active
+  - username: taiki_Pien
+    role: active
+  - username: SHARP_JP
+    role: active
+  - username: cider592photo
+    role: active
+  - username: teyan_dei
+    role: active
+  - username: SOMA_TRANSISTOR
+    role: active
+
+hashtags: []
+
+keywords:
+  - "料理 グルメ ホスト"
+  - "料理 グルメ 筋トレ"
+  - "ホスト 筋トレ"
+  - "料理 グルメ ホスト 筋トレ"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

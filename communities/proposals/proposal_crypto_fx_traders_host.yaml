@@ -1,0 +1,44 @@
+id: proposal_crypto_fx_traders_host
+name: "仮想通貨 Web3 x FX 投資 x ホスト 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 8
+# total_follow_edges: 83
+# avg_bridge_score: 41.780
+# source_communities: crypto, fx_traders, host
+
+seeds:
+  - username: gunshin_ituki
+    role: influencer
+  - username: romi_hoshino
+    role: influencer
+  - username: zosentarou
+    role: influencer
+  - username: hayashinaohiro
+    role: active
+  - username: satoshi19890101
+    role: active
+  - username: KeiTanaka_Radio
+    role: active
+  - username: Matsuo_Lab
+    role: active
+  - username: kawai_design
+    role: active
+
+hashtags: []
+
+keywords:
+  - "仮想通貨 Web3 FX 投資"
+  - "仮想通貨 Web3 ホスト"
+  - "FX 投資 ホスト"
+  - "仮想通貨 Web3 FX 投資 ホスト"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

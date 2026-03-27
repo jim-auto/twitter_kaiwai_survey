@@ -1,0 +1,44 @@
+id: proposal_crypto_fx_traders_startup
+name: "仮想通貨 Web3 x FX 投資 x 起業 スタートアップ 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 10
+# total_follow_edges: 64
+# avg_bridge_score: 34.954
+# source_communities: crypto, fx_traders, startup
+
+seeds:
+  - username: grok
+    role: influencer
+  - username: mikami_01
+    role: influencer
+  - username: jinkamiya
+    role: active
+  - username: usutaku_channel
+    role: active
+  - username: AiFreak_tool
+    role: active
+  - username: WatcherGuru
+    role: active
+  - username: smith796000
+    role: active
+  - username: shota7180
+    role: active
+
+hashtags: []
+
+keywords:
+  - "仮想通貨 Web3 FX 投資"
+  - "仮想通貨 Web3 起業 スタートアップ"
+  - "FX 投資 起業 スタートアップ"
+  - "仮想通貨 Web3 FX 投資 起業 スタートアップ"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

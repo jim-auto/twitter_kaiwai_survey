@@ -115,6 +115,47 @@ def pages(confidence):
 
 
 @cli.command()
+@click.option("--confidence", "-c", default=0.5, help="譛菴残onfidence髢ｾ蛟､")
+@click.option("--combo-size", default=3, help="combo size for proposal extraction")
+@click.option("--min-support", default=6, help="minimum supporting accounts")
+@click.option("--max-proposals", default=12, help="maximum proposal count")
+@click.option("--write-yaml", is_flag=True, help="write YAML stubs into communities/proposals")
+def frontier_expand(confidence, combo_size, min_support, max_proposals, write_yaml):
+    """frontier seed 縺九ｉ新規界隈候補繧呈歓蜃ｺ"""
+    from pathlib import Path
+
+    from tools.frontier_expansion import (
+        build_expansion_proposals,
+        render_markdown,
+        write_yaml_stubs,
+    )
+
+    proposals = build_expansion_proposals(
+        min_confidence=confidence,
+        combo_size=combo_size,
+        min_support=min_support,
+        max_proposals=max_proposals,
+    )
+
+    output_path = Path("data/exports/frontier_expansion_2026-03-27.md")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        render_markdown(
+            proposals,
+            min_confidence=confidence,
+            combo_size=combo_size,
+            min_support=min_support,
+        ),
+        encoding="utf-8",
+    )
+    print(f"[OK] {output_path} written")
+
+    if write_yaml:
+        written = write_yaml_stubs(proposals, Path("communities/proposals"))
+        print(f"[OK] wrote {len(written)} YAML proposal stubs")
+
+
+@cli.command()
 @click.argument("community_id", required=False)
 def run_all(community_id):
     """全パイプラインを実行（discover → follows → profiles → analyze）"""

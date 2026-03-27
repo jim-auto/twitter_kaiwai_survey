@@ -1,0 +1,44 @@
+id: proposal_anime_gaming_vtuber
+name: "アニメ 漫画 x ゲーム x VTuber 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 12
+# total_follow_edges: 84
+# avg_bridge_score: 37.288
+# source_communities: anime, gaming, vtuber
+
+seeds:
+  - username: room_vault
+    role: influencer
+  - username: shiromanta1020
+    role: influencer
+  - username: k4sen
+    role: active
+  - username: enako_cos
+    role: active
+  - username: SAK_SAK_SAKUMA
+    role: active
+  - username: _amatsuki_
+    role: active
+  - username: Yorimen
+    role: active
+  - username: Ayase_0404
+    role: active
+
+hashtags: []
+
+keywords:
+  - "アニメ 漫画 ゲーム"
+  - "アニメ 漫画 VTuber"
+  - "ゲーム VTuber"
+  - "アニメ 漫画 ゲーム VTuber"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

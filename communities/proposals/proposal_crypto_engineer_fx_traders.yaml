@@ -1,0 +1,44 @@
+id: proposal_crypto_engineer_fx_traders
+name: "仮想通貨 Web3 x エンジニア x FX 投資 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 9
+# total_follow_edges: 66
+# avg_bridge_score: 36.910
+# source_communities: crypto, engineer, fx_traders
+
+seeds:
+  - username: alljon12
+    role: influencer
+  - username: zosentarou
+    role: influencer
+  - username: satori_sz9
+    role: active
+  - username: TAIRAMASAAKI
+    role: active
+  - username: traderyamamoto
+    role: active
+  - username: Matsuo_Lab
+    role: active
+  - username: claudeai
+    role: active
+  - username: kosuke_agos
+    role: active
+
+hashtags: []
+
+keywords:
+  - "仮想通貨 Web3 エンジニア"
+  - "仮想通貨 Web3 FX 投資"
+  - "エンジニア FX 投資"
+  - "仮想通貨 Web3 エンジニア FX 投資"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

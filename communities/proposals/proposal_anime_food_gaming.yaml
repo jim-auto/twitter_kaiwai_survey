@@ -1,0 +1,44 @@
+id: proposal_anime_food_gaming
+name: "アニメ 漫画 x 料理 グルメ x ゲーム 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 14
+# total_follow_edges: 88
+# avg_bridge_score: 37.827
+# source_communities: anime, food, gaming
+
+seeds:
+  - username: room_vault
+    role: influencer
+  - username: shiromanta1020
+    role: influencer
+  - username: k4sen
+    role: active
+  - username: akiko_lawson
+    role: active
+  - username: soshina3
+    role: active
+  - username: _amatsuki_
+    role: active
+  - username: Ayase_0404
+    role: active
+  - username: 00_yuki_Y
+    role: active
+
+hashtags: []
+
+keywords:
+  - "アニメ 漫画 料理 グルメ"
+  - "アニメ 漫画 ゲーム"
+  - "料理 グルメ ゲーム"
+  - "アニメ 漫画 料理 グルメ ゲーム"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000

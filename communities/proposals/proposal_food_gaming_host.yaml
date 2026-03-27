@@ -1,0 +1,42 @@
+id: proposal_food_gaming_host
+name: "料理 グルメ x ゲーム x ホスト 候補"
+description: "frontier seed analysis から抽出した新規界隈候補。要手動調整。"
+
+# support_count: 7
+# total_follow_edges: 49
+# avg_bridge_score: 39.700
+# source_communities: food, gaming, host
+
+seeds:
+  - username: ngnchiikawa
+    role: influencer
+  - username: shiromanta1020
+    role: influencer
+  - username: DJ_Foy_jp
+    role: active
+  - username: soshina3
+    role: active
+  - username: Ku_ru_ma__
+    role: active
+  - username: takkuxutv
+    role: active
+  - username: dai2noyuyuta
+    role: active
+
+hashtags: []
+
+keywords:
+  - "料理 グルメ ゲーム"
+  - "料理 グルメ ホスト"
+  - "ゲーム ホスト"
+  - "料理 グルメ ゲーム ホスト"
+
+bio_patterns: []
+
+exclude_patterns:
+  - "(公式|official|news|press|media)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000
