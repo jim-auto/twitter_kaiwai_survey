@@ -1,0 +1,46 @@
+id: tech_investor
+name: テック投資家界隈
+description: "AI、エンジニア、Web3、トレード、スタートアップを横断するテック投資系コミュニティ"
+
+seeds:
+  - username: zosentarou
+    role: influencer
+  - username: narita_yusuke
+    role: influencer
+  - username: jinkamiya
+    role: influencer
+  - username: usutaku_channel
+    role: active
+  - username: hayashinaohiro
+    role: active
+  - username: traderyamamoto
+    role: active
+  - username: satori_sz9
+    role: active
+  - username: KeiTanaka_Radio
+    role: active
+
+hashtags:
+  - "#AI"
+  - "#投資"
+  - "#株クラ"
+  - "#Web3"
+  - "#暗号資産"
+
+keywords:
+  - "AI 投資"
+  - "エンジニア 投資"
+  - "Web3 トレード"
+  - "スタートアップ 投資家"
+  - "テック 投資"
+
+bio_patterns:
+  - "(投資家|投資|トレーダー|株|暗号資産|仮想通貨|Web3|AI|エンジニア|起業家|Founder|VC|デイトレ|トレード|SaaS)"
+
+exclude_patterns:
+  - "(公式|official|news|bot|メディア|PR|採用)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 4000

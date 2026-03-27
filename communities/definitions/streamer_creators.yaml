@@ -1,0 +1,45 @@
+id: streamer_creators
+name: クリエイター・配信者界隈
+description: "ストリーマー、ゲーム実況者、VTuber、YouTuber、ネットクリエイターが交差するコミュニティ"
+
+seeds:
+  - username: k4sen
+    role: influencer
+  - username: MitoTsukino
+    role: influencer
+  - username: hikakin
+    role: influencer
+  - username: enako_cos
+    role: influencer
+  - username: ngnchiikawa
+    role: influencer
+  - username: DJ_Foy_jp
+    role: active
+  - username: shiromanta1020
+    role: active
+  - username: room_vault
+    role: active
+
+hashtags:
+  - "#ストリーマー"
+  - "#配信者"
+  - "#VTuber"
+  - "#YouTuber"
+  - "#ゲーム実況"
+
+keywords:
+  - "ゲーム実況 配信"
+  - "VTuber 配信者"
+  - "ストリーマー クリエイター"
+  - "YouTuber ゲーム"
+
+bio_patterns:
+  - "(配信者|ストリーマー|実況者|VTuber|Vtuber|YouTuber|クリエイター|ゲーム実況|Twitch|配信中|歌い手)"
+
+exclude_patterns:
+  - "(公式|official|news|まとめ|切り抜き|bot|メディア|PR)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 4000
