@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from analysis.bridge_accounts import AttentionBridgeView, detect_bridge_accounts
 from analysis.clustering import detect_affinity_clusters
 from config.settings import DB_PATH, EXPORT_DIR
+from tools.frontier_expansion import build_expansion_proposals
 
 
 def load_names(conn: sqlite3.Connection) -> dict[str, str]:
@@ -274,24 +275,54 @@ def append_attention_view(
     view: AttentionBridgeView,
     limit: int = 8,
 ) -> None:
+    community_seeds = [
+        row for row in view.attention_hubs
+        if row.account_category == "community_seed"
+    ]
+    generic_hubs = [
+        row for row in view.attention_hubs
+        if row.account_category != "community_seed"
+    ]
+
     lines.append(f"### {view.label}")
     lines.append(f"- description: {view.description}")
     if view.excluded_community_ids:
         lines.append(f"- excluded_communities: `{', '.join(view.excluded_community_ids)}`")
     lines.append(f"- attention_hubs: `{view.attention_hub_count}`")
     lines.append(f"- cross_cluster_attention_hubs: `{view.cross_cluster_attention_hub_count}`")
-    if view.attention_hubs:
-        for row in view.attention_hubs[:limit]:
+    lines.append(f"- community_seeds: `{view.community_seed_count}`")
+    lines.append(f"- generic_hubs: `{view.generic_hub_count}`")
+    if view.category_counts:
+        lines.append(
+            "- category_counts: " + ", ".join(
+                f"`{category}`={count}" for category, count in sorted(view.category_counts.items())
+            )
+        )
+    if community_seeds:
+        lines.append("- top_community_seeds:")
+        for row in community_seeds[:limit]:
             community_names = ", ".join(
                 f"{names[cid]} (`{cid}`)" for cid in row.source_community_ids
             )
             cluster_labels = ", ".join(f"`{label}`" for label in row.cluster_labels)
             lines.append(
                 f"- @{row.screen_name} ({row.followers_count:,} followers): "
-                f"score={row.bridge_score:.3f}, communities={community_names}, "
+                f"score={row.bridge_score:.3f}, type={row.account_category}, communities={community_names}, "
                 f"clusters={cluster_labels}, edges={row.follow_edge_count}"
             )
-    else:
+    if generic_hubs:
+        lines.append("- top_generic_hubs:")
+        for row in generic_hubs[: min(5, limit)]:
+            community_names = ", ".join(
+                f"{names[cid]} (`{cid}`)" for cid in row.source_community_ids
+            )
+            cluster_labels = ", ".join(f"`{label}`" for label in row.cluster_labels)
+            lines.append(
+                f"- @{row.screen_name} ({row.followers_count:,} followers): "
+                f"score={row.bridge_score:.3f}, type={row.account_category}, communities={community_names}, "
+                f"clusters={cluster_labels}, edges={row.follow_edge_count}"
+            )
+    if not view.attention_hubs:
         lines.append("- None at this threshold")
     if view.cluster_pairs:
         lines.append("- top_cluster_pairs:")
@@ -327,6 +358,10 @@ def build_report(
     bridge_analysis = detect_bridge_accounts(
         min_confidence=high_confidence,
         cluster_analysis=clusters,
+    )
+    expansion_proposals = build_expansion_proposals(
+        min_confidence=high_confidence,
+        bridge_analysis=bridge_analysis,
     )
 
     community_rows = cross_metrics["community_rows"]
@@ -464,6 +499,9 @@ def build_report(
     lines.append(
         f"- frontier seed candidates: `{bridge_analysis.frontier_seed_view.attention_hub_count}`"
     )
+    lines.append(
+        f"- expansion proposals: `{len(expansion_proposals)}`"
+    )
     lines.append("")
 
     append_attention_view(lines, names, bridge_analysis.all_view, limit=10)
@@ -481,6 +519,28 @@ def build_report(
                 f"- @{row.screen_name} ({row.followers_count:,} followers): "
                 f"score={row.bridge_score:.3f}, communities={community_names}, clusters={cluster_labels}"
             )
+    else:
+        lines.append("- None at this threshold")
+    lines.append("")
+
+    lines.append("### Expansion Proposals")
+    if expansion_proposals:
+        for proposal in expansion_proposals[:8]:
+            communities = ", ".join(
+                f"{name} (`{cid}`)"
+                for cid, name in zip(proposal.community_ids, proposal.community_names)
+            )
+            lines.append(
+                f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
+                f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
+                f"generic={proposal.generic_hub_count}, seed_ratio={proposal.community_seed_ratio:.1%}, "
+                f"communities={communities}"
+            )
+            for account in proposal.top_actionable_accounts[:3]:
+                lines.append(
+                    f"-   @{account.screen_name}: score={account.bridge_score:.3f}, "
+                    f"type={account.account_category}, edges={account.follow_edge_count}"
+                )
     else:
         lines.append("- None at this threshold")
     lines.append("")

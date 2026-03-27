@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import sqlite3
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from itertools import combinations
 
@@ -37,6 +37,8 @@ class AttentionBridgeAccount:
     cluster_count: int
     follow_edge_count: int
     bridge_score: float
+    account_category: str
+    classification_reasons: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -56,6 +58,9 @@ class AttentionBridgeView:
     exclude_existing_members: bool
     attention_hub_count: int
     cross_cluster_attention_hub_count: int
+    community_seed_count: int
+    generic_hub_count: int
+    category_counts: dict[str, int]
     attention_hubs: list[AttentionBridgeAccount]
     cross_cluster_attention_hubs: list[AttentionBridgeAccount]
     cluster_pairs: list[ClusterBridgePair]
@@ -77,6 +82,29 @@ class BridgeAccountAnalysisResult:
     no_nanpa_view: AttentionBridgeView
     frontier_view: AttentionBridgeView
     frontier_seed_view: AttentionBridgeView
+
+
+OFFICIAL_TOKENS = (
+    "official",
+    "公式",
+    "運営",
+    "広報",
+)
+
+MEDIA_TOKENS = (
+    "news",
+    "press",
+    "media",
+    "magazine",
+    "journal",
+    "wiki",
+    "topics",
+    "速報",
+    "ニュース",
+    "新聞",
+    "編集部",
+    "メディア",
+)
 
 
 def _chunked(values: list[str], size: int = 900):
@@ -126,17 +154,19 @@ def _load_user_map(
             SELECT user_id,
                    screen_name,
                    COALESCE(display_name, '') AS display_name,
+                   COALESCE(bio, '') AS bio,
                    COALESCE(followers_count, 0) AS followers_count
             FROM users
             WHERE user_id IN ({placeholders})
             """,
             chunk,
         ).fetchall()
-        for user_id, screen_name, display_name, followers_count in rows:
+        for user_id, screen_name, display_name, bio, followers_count in rows:
             user_map[user_id] = {
                 "user_id": user_id,
                 "screen_name": screen_name,
                 "display_name": display_name or "",
+                "bio": bio or "",
                 "followers_count": int(followers_count or 0),
             }
     return user_map
@@ -163,6 +193,53 @@ def _followers_for(user_id: str, user_map: dict[str, dict[str, object]]) -> int:
     if record:
         return int(record.get("followers_count", 0) or 0)
     return 0
+
+
+def _bio_for(user_id: str, user_map: dict[str, dict[str, object]]) -> str:
+    record = user_map.get(user_id)
+    if record and record.get("bio"):
+        return str(record["bio"])
+    return ""
+
+
+def _normalize_account_text(
+    *,
+    screen_name: str,
+    display_name: str,
+    bio: str,
+) -> str:
+    return " ".join(part for part in (screen_name, display_name, bio) if part).lower()
+
+
+def _classify_attention_account(
+    *,
+    screen_name: str,
+    display_name: str,
+    bio: str,
+    followers_count: int,
+    source_community_count: int,
+    cluster_count: int,
+) -> tuple[str, list[str]]:
+    normalized = _normalize_account_text(
+        screen_name=screen_name,
+        display_name=display_name,
+        bio=bio,
+    )
+    reasons: list[str] = []
+
+    if any(token in normalized for token in OFFICIAL_TOKENS):
+        reasons.append("official_token")
+    if any(token in normalized for token in MEDIA_TOKENS):
+        reasons.append("media_token")
+
+    if "media_token" in reasons:
+        return "media_hub", reasons
+    if "official_token" in reasons:
+        return "official_hub", reasons
+    if followers_count >= 1_000_000 and source_community_count >= 4 and cluster_count >= 2:
+        reasons.append("large_cross_cluster_following")
+        return "celebrity_hub", reasons
+    return "community_seed", reasons
 
 
 def _build_cluster_maps(
@@ -338,10 +415,20 @@ def _materialize_attention_view(
             continue
 
         followers_count = _followers_for(user_id, user_map)
+        screen_name = _screen_name_for(user_id, user_map)
+        display_name = _display_name_for(user_id, user_map)
+        account_category, classification_reasons = _classify_attention_account(
+            screen_name=screen_name,
+            display_name=display_name,
+            bio=_bio_for(user_id, user_map),
+            followers_count=followers_count,
+            source_community_count=source_community_count,
+            cluster_count=cluster_count,
+        )
         rows.append(AttentionBridgeAccount(
             user_id=user_id,
-            screen_name=_screen_name_for(user_id, user_map),
-            display_name=_display_name_for(user_id, user_map),
+            screen_name=screen_name,
+            display_name=display_name,
             followers_count=followers_count,
             source_community_ids=source_community_ids,
             cluster_labels=cluster_labels,
@@ -354,12 +441,15 @@ def _materialize_attention_view(
                 follow_edge_count=follow_edge_count,
                 followers_count=followers_count,
             ),
+            account_category=account_category,
+            classification_reasons=classification_reasons,
         ))
 
     rows.sort(
         key=lambda row: (
             row.cluster_count,
             row.source_community_count,
+            row.account_category == "community_seed",
             row.bridge_score,
             row.follow_edge_count,
             row.followers_count,
@@ -368,6 +458,7 @@ def _materialize_attention_view(
         reverse=True,
     )
     cross_cluster_rows = [row for row in rows if row.cluster_count >= 2]
+    category_counts = Counter(row.account_category for row in rows)
 
     pair_map: dict[tuple[str, str], list[AttentionBridgeAccount]] = defaultdict(list)
     for row in cross_cluster_rows:
@@ -409,6 +500,12 @@ def _materialize_attention_view(
         exclude_existing_members=exclude_existing_members,
         attention_hub_count=len(rows),
         cross_cluster_attention_hub_count=len(cross_cluster_rows),
+        community_seed_count=category_counts.get("community_seed", 0),
+        generic_hub_count=sum(
+            count for category, count in category_counts.items()
+            if category != "community_seed"
+        ),
+        category_counts=dict(sorted(category_counts.items())),
         attention_hubs=rows,
         cross_cluster_attention_hubs=cross_cluster_rows,
         cluster_pairs=cluster_pairs,

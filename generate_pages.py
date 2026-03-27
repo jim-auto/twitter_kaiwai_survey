@@ -19,6 +19,7 @@ from analysis.overlap import (
     compute_follow_affinity,
     compute_pairwise_overlap,
 )
+from tools.frontier_expansion import build_expansion_proposals
 
 MARKER_START = "// __REPORT_DATA_START__"
 MARKER_END = "// __REPORT_DATA_END__"
@@ -26,6 +27,8 @@ MAX_BRIDGE_ROWS = 120
 MAX_BRIDGE_PAIR_ROWS = 40
 MAX_PAIR_REPRESENTATIVES = 5
 MAX_TOP_INFLUENCERS = 8
+MAX_PROPOSALS = 12
+MAX_PROPOSAL_ACCOUNTS = 6
 
 
 def _trim_bridge_view(view: dict[str, object]) -> None:
@@ -52,6 +55,16 @@ def _trim_report_data_for_pages(report_data: dict[str, object]) -> dict[str, obj
         for key in ("all_view", "no_nanpa_view", "frontier_view", "frontier_seed_view"):
             if key in bridges:
                 _trim_bridge_view(bridges[key])
+
+    expansion = page_data.get("expansion", {})
+    if expansion:
+        proposals = list(expansion.get("proposals", []))[:MAX_PROPOSALS]
+        for proposal in proposals:
+            proposal["top_accounts"] = list(proposal.get("top_accounts", []))[:MAX_PROPOSAL_ACCOUNTS]
+            proposal["top_actionable_accounts"] = list(
+                proposal.get("top_actionable_accounts", [])
+            )[:MAX_PROPOSAL_ACCOUNTS]
+        expansion["proposals"] = proposals
     return page_data
 
 
@@ -66,6 +79,10 @@ def generate_pages(min_confidence: float = 0.5) -> None:
     bridges = detect_bridge_accounts(
         min_confidence=min_confidence,
         cluster_analysis=clusters,
+    )
+    expansion_proposals = build_expansion_proposals(
+        min_confidence=min_confidence,
+        bridge_analysis=bridges,
     )
 
     report_data = {
@@ -83,6 +100,11 @@ def generate_pages(min_confidence: float = 0.5) -> None:
         },
         "clusters": asdict(clusters),
         "bridges": asdict(bridges),
+        "expansion": {
+            "combo_size": 3,
+            "min_support": 6,
+            "proposals": [asdict(proposal) for proposal in expansion_proposals],
+        },
     }
 
     page_data = _trim_report_data_for_pages(report_data)
@@ -136,6 +158,7 @@ def generate_pages(min_confidence: float = 0.5) -> None:
     print(f"  Bridge hubs: {bridges.attention_hub_count}")
     print(f"  Bridge hubs without nanpa: {bridges.no_nanpa_view.attention_hub_count}")
     print(f"  Frontier candidates: {bridges.frontier_view.attention_hub_count}")
+    print(f"  Expansion proposals: {len(expansion_proposals)}")
 
 
 if __name__ == "__main__":

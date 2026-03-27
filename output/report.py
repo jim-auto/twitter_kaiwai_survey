@@ -10,6 +10,7 @@ from analysis.clustering import detect_affinity_clusters
 from analysis.community_size import compute_all_sizes
 from analysis.overlap import build_overlap_matrix, compute_pairwise_overlap
 from config.settings import EXPORT_DIR
+from tools.frontier_expansion import build_expansion_proposals
 
 
 def _format_attention_account(account) -> str:
@@ -20,6 +21,7 @@ def _format_attention_account(account) -> str:
     clusters = ", ".join(account.cluster_labels)
     return (
         f"- {label}: score={account.bridge_score:.3f}, "
+        f"type={account.account_category}, "
         f"communities={account.source_community_count}, clusters={account.cluster_count}, "
         f"edges={account.follow_edge_count}, followers={account.followers_count:,} "
         f"[{communities}] ({clusters})"
@@ -40,18 +42,39 @@ def _format_member_account(account) -> str:
 
 
 def _write_attention_view_section(f, view: AttentionBridgeView, limit: int = 20) -> None:
+    community_seeds = [
+        account for account in view.attention_hubs
+        if account.account_category == "community_seed"
+    ]
+    generic_hubs = [
+        account for account in view.attention_hubs
+        if account.account_category != "community_seed"
+    ]
+
     f.write(f"\n### {view.label}\n\n")
     f.write(f"- description: {view.description}\n")
     if view.excluded_community_ids:
         f.write(f"- excluded_communities: {', '.join(view.excluded_community_ids)}\n")
     f.write(f"- attention_hubs: {view.attention_hub_count}\n")
     f.write(f"- cross_cluster_attention_hubs: {view.cross_cluster_attention_hub_count}\n")
+    f.write(f"- community_seeds: {view.community_seed_count}\n")
+    f.write(f"- generic_hubs: {view.generic_hub_count}\n")
+    if view.category_counts:
+        f.write(
+            "- category_counts: "
+            + ", ".join(f"{key}={value}" for key, value in sorted(view.category_counts.items()))
+            + "\n"
+        )
 
-    if view.attention_hubs:
-        f.write("\nTop accounts:\n")
-        for account in view.attention_hubs[:limit]:
+    if community_seeds:
+        f.write("\nTop community seeds:\n")
+        for account in community_seeds[:limit]:
             f.write(_format_attention_account(account) + "\n")
-    else:
+    if generic_hubs:
+        f.write("\nTop generic hubs:\n")
+        for account in generic_hubs[: min(10, limit)]:
+            f.write(_format_attention_account(account) + "\n")
+    if not view.attention_hubs:
         f.write("\n- none\n")
 
     if view.cluster_pairs:
@@ -76,6 +99,10 @@ def generate_report(min_confidence: float = 0.5) -> None:
         min_confidence=min_confidence,
         cluster_analysis=clusters,
     )
+    expansion_proposals = build_expansion_proposals(
+        min_confidence=min_confidence,
+        bridge_analysis=bridges,
+    )
 
     report_data = {
         "min_confidence": min_confidence,
@@ -87,6 +114,11 @@ def generate_report(min_confidence: float = 0.5) -> None:
         },
         "clusters": asdict(clusters),
         "bridges": asdict(bridges),
+        "expansion": {
+            "combo_size": 3,
+            "min_support": 6,
+            "proposals": [asdict(proposal) for proposal in expansion_proposals],
+        },
     }
 
     json_path = EXPORT_DIR / "report.json"
@@ -166,6 +198,32 @@ def generate_report(min_confidence: float = 0.5) -> None:
         else:
             f.write("- none\n")
 
+        f.write("\n## Expansion Proposals\n\n")
+        if expansion_proposals:
+            for proposal in expansion_proposals:
+                communities = ", ".join(
+                    f"{name} (`{cid}`)"
+                    for cid, name in zip(proposal.community_ids, proposal.community_names)
+                )
+                f.write(f"### {proposal.proposal_name}\n\n")
+                f.write(f"- proposal_id: `{proposal.proposal_id}`\n")
+                f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
+                f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
+                f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")
+                f.write(f"- generic_hub_count: `{proposal.generic_hub_count}`\n")
+                f.write(f"- community_seed_ratio: `{proposal.community_seed_ratio:.1%}`\n")
+                f.write(f"- total_follow_edges: `{proposal.total_follow_edges}`\n")
+                f.write(f"- avg_bridge_score: `{proposal.avg_bridge_score:.3f}`\n")
+                f.write(f"- avg_cluster_count: `{proposal.avg_cluster_count:.3f}`\n")
+                f.write(f"- spillover_community_count: `{proposal.spillover_community_count}`\n")
+                f.write(f"- communities: {communities}\n")
+                f.write("- top_actionable_accounts:\n")
+                for account in proposal.top_actionable_accounts[:6]:
+                    f.write(_format_attention_account(account) + "\n")
+                f.write("\n")
+        else:
+            f.write("- none\n")
+
         f.write("\n## Top Influencers\n\n")
         for size in sizes:
             if not size.top_influencers:
@@ -208,3 +266,8 @@ def generate_report(min_confidence: float = 0.5) -> None:
         f"frontier={bridges.frontier_view.attention_hub_count}, "
         f"seed={bridges.frontier_seed_view.attention_hub_count}"
     )
+    if expansion_proposals:
+        print(
+            " | proposals="
+            f"{len(expansion_proposals)} top={expansion_proposals[0].proposal_id}"
+        )

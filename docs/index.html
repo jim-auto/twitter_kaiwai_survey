@@ -304,6 +304,7 @@
       <thead>
         <tr>
           <th>Account</th>
+          <th>Type</th>
           <th>Communities</th>
           <th>Clusters</th>
           <th class="num">Followers</th>
@@ -318,6 +319,7 @@
       <thead>
         <tr>
           <th>Account</th>
+          <th>Type</th>
           <th>Communities</th>
           <th>Clusters</th>
           <th class="num">Followers</th>
@@ -346,6 +348,7 @@
       <thead>
         <tr>
           <th>Account</th>
+          <th>Type</th>
           <th>Communities</th>
           <th>Clusters</th>
           <th class="num">Followers</th>
@@ -361,6 +364,7 @@
       <thead>
         <tr>
           <th>Account</th>
+          <th>Type</th>
           <th>Communities</th>
           <th>Clusters</th>
           <th class="num">Followers</th>
@@ -376,6 +380,7 @@
       <thead>
         <tr>
           <th>Account</th>
+          <th>Type</th>
           <th>Communities</th>
           <th>Clusters</th>
           <th class="num">Followers</th>
@@ -383,6 +388,55 @@
         </tr>
       </thead>
       <tbody id="bridge-frontier-seed-table"></tbody>
+    </table>
+
+    <h3 style="margin:24px 0 10px;">Frontier Actionable Seeds</h3>
+    <p style="color:#888;margin-bottom:10px;">Filtered to accounts classified as community seeds instead of media-like generic hubs.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Type</th>
+          <th>Communities</th>
+          <th>Clusters</th>
+          <th class="num">Followers</th>
+          <th class="num">Score</th>
+        </tr>
+      </thead>
+      <tbody id="bridge-frontier-actionable-table"></tbody>
+    </table>
+
+    <h3 style="margin:24px 0 10px;">Frontier Generic Hubs</h3>
+    <p style="color:#888;margin-bottom:10px;">Media, official, or celebrity-style hubs kept separate so they do not dominate seed review.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Type</th>
+          <th>Communities</th>
+          <th>Clusters</th>
+          <th class="num">Followers</th>
+          <th class="num">Score</th>
+        </tr>
+      </thead>
+      <tbody id="bridge-frontier-generic-table"></tbody>
+    </table>
+
+    <h3 style="margin:24px 0 10px;">Expansion Proposals</h3>
+    <p style="color:#888;margin-bottom:10px;">Novelty score favors new accounts, community-seed density, and bridge lift while penalizing generic hubs.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Proposal</th>
+          <th>Communities</th>
+          <th>Example Seeds</th>
+          <th class="num">New</th>
+          <th class="num">Actionable</th>
+          <th class="num">Generic</th>
+          <th class="num">Novelty</th>
+        </tr>
+      </thead>
+      <tbody id="proposal-table"></tbody>
     </table>
   </div>
 
@@ -547,7 +601,28 @@ function renderClusterTab(communities, clusterData) {
   }
 }
 
-function renderBridgeTab(communities, bridgeData) {
+function accountCategoryLabel(category) {
+  const labels = {
+    community_seed: 'Seed',
+    media_hub: 'Media',
+    official_hub: 'Official',
+    celebrity_hub: 'Celebrity',
+  };
+  return labels[category] || category || '-';
+}
+
+function accountCategoryBadge(category) {
+  const styles = {
+    community_seed: ['#4ade80', 'rgba(74,222,128,0.15)'],
+    media_hub: ['#fbbf24', 'rgba(251,191,36,0.15)'],
+    official_hub: ['#60a5fa', 'rgba(96,165,250,0.15)'],
+    celebrity_hub: ['#f472b6', 'rgba(244,114,182,0.15)'],
+  };
+  const palette = styles[category] || ['#9ca3af', 'rgba(156,163,175,0.15)'];
+  return `<span class="badge" style="color:${palette[0]};background:${palette[1]};">${accountCategoryLabel(category)}</span>`;
+}
+
+function renderBridgeTab(communities, bridgeData, expansionData) {
   const summary = document.getElementById('bridge-summary');
   const table = document.getElementById('bridge-table');
   const crossTable = document.getElementById('bridge-cross-table');
@@ -555,20 +630,25 @@ function renderBridgeTab(communities, bridgeData) {
   const noNanpaTable = document.getElementById('bridge-no-nanpa-table');
   const frontierTable = document.getElementById('bridge-frontier-table');
   const frontierSeedTable = document.getElementById('bridge-frontier-seed-table');
-  if (!summary || !table || !crossTable || !pairTable || !noNanpaTable || !frontierTable || !frontierSeedTable) return;
+  const frontierActionableTable = document.getElementById('bridge-frontier-actionable-table');
+  const frontierGenericTable = document.getElementById('bridge-frontier-generic-table');
+  const proposalTable = document.getElementById('proposal-table');
+  if (!summary || !table || !crossTable || !pairTable || !noNanpaTable || !frontierTable || !frontierSeedTable || !frontierActionableTable || !frontierGenericTable || !proposalTable) return;
 
   const nameMap = buildNameMap(communities);
   const allView = bridgeData?.all_view || {};
   const noNanpaView = bridgeData?.no_nanpa_view || {};
   const frontierView = bridgeData?.frontier_view || {};
   const frontierSeedView = bridgeData?.frontier_seed_view || {};
+  const proposals = (expansionData?.proposals || []).slice(0, 12);
   const topAccounts = (allView.attention_hubs || bridgeData?.attention_hubs || []).slice(0, 120);
   const crossAccounts = (allView.cross_cluster_attention_hubs || bridgeData?.cross_cluster_attention_hubs || []).slice(0, 120);
   const clusterPairs = (allView.cluster_pairs || bridgeData?.cluster_pairs || []).slice(0, 40);
   const noNanpaAccounts = (noNanpaView.attention_hubs || []).slice(0, 120);
   const frontierAccounts = (frontierView.attention_hubs || []).slice(0, 120);
   const frontierSeedAccounts = (frontierSeedView.attention_hubs || []).slice(0, 120);
-  const topScore = topAccounts.length > 0 ? topAccounts[0].bridge_score : 0;
+  const frontierActionableAccounts = frontierSeedAccounts.filter(account => account.account_category === 'community_seed');
+  const frontierGenericAccounts = frontierSeedAccounts.filter(account => account.account_category !== 'community_seed');
 
   summary.innerHTML = `
     <div class="cluster-panel">
@@ -588,6 +668,14 @@ function renderBridgeTab(communities, bridgeData) {
       <div class="value">${frontierSeedView.attention_hub_count || 0}</div>
     </div>
     <div class="cluster-panel">
+      <div class="eyebrow">Actionable Seeds</div>
+      <div class="value">${frontierSeedView.community_seed_count || frontierActionableAccounts.length || 0}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Generic Hubs</div>
+      <div class="value">${frontierSeedView.generic_hub_count || frontierGenericAccounts.length || 0}</div>
+    </div>
+    <div class="cluster-panel">
       <div class="eyebrow">Member Bridges</div>
       <div class="value">${bridgeData?.member_bridge_account_count || 0}</div>
     </div>
@@ -596,15 +684,15 @@ function renderBridgeTab(communities, bridgeData) {
       <div class="value">${allView.cross_cluster_attention_hub_count || bridgeData?.cross_cluster_attention_hub_count || 0}</div>
     </div>
     <div class="cluster-panel">
-      <div class="eyebrow">Top Score</div>
-      <div class="value">${topScore.toFixed(3)}</div>
+      <div class="eyebrow">Proposals</div>
+      <div class="value">${proposals.length}</div>
     </div>
   `;
 
   const renderAccountRows = (rows, target) => {
     target.innerHTML = '';
     if (!rows.length) {
-      target.innerHTML = '<tr><td colspan="5" style="color:#888;">No data</td></tr>';
+      target.innerHTML = '<tr><td colspan="6" style="color:#888;">No data</td></tr>';
       return;
     }
     rows.forEach(account => {
@@ -617,6 +705,7 @@ function renderBridgeTab(communities, bridgeData) {
       const href = account.screen_name ? `https://x.com/${account.screen_name}` : null;
       target.innerHTML += `<tr>
         <td>${href ? `<a href="${href}" target="_blank" rel="noreferrer">${label}</a>` : label}</td>
+        <td>${accountCategoryBadge(account.account_category)}</td>
         <td>${communitiesText}</td>
         <td>${clustersText}</td>
         <td class="num">${formatNum(account.followers_count)}</td>
@@ -643,6 +732,33 @@ function renderBridgeTab(communities, bridgeData) {
         <td>${reps}</td>
         <td class="num num-highlight">${pair.account_count}</td>
       </tr>`;
+      });
+  };
+
+  const renderProposalRows = (rows, target) => {
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.innerHTML = '<tr><td colspan="7" style="color:#888;">No data</td></tr>';
+      return;
+    }
+    rows.forEach(proposal => {
+      const communitiesText = (proposal.community_names || []).map((name, index) => (
+        `${name} (${proposal.community_ids[index]})`
+      )).join(' / ');
+      const seeds = (proposal.top_actionable_accounts || []).slice(0, 3).map(account => (
+        account.screen_name
+          ? `<a href="https://x.com/${account.screen_name}" target="_blank" rel="noreferrer">@${account.screen_name}</a>`
+          : account.user_id
+      )).join(', ');
+      target.innerHTML += `<tr>
+        <td>${proposal.proposal_name}</td>
+        <td>${communitiesText}</td>
+        <td>${seeds}</td>
+        <td class="num">${proposal.new_account_count}</td>
+        <td class="num">${proposal.actionable_support_count}</td>
+        <td class="num">${proposal.generic_hub_count}</td>
+        <td class="num num-highlight">${proposal.novelty_score.toFixed(3)}</td>
+      </tr>`;
     });
   };
 
@@ -652,6 +768,9 @@ function renderBridgeTab(communities, bridgeData) {
   renderAccountRows(noNanpaAccounts, noNanpaTable);
   renderAccountRows(frontierAccounts, frontierTable);
   renderAccountRows(frontierSeedAccounts, frontierSeedTable);
+  renderAccountRows(frontierActionableAccounts, frontierActionableTable);
+  renderAccountRows(frontierGenericAccounts, frontierGenericTable);
+  renderProposalRows(proposals, proposalTable);
 }
 
 function renderNetworkGraph(communities, affinities, clusterData) {
@@ -762,6 +881,7 @@ function render(data) {
   const affMatrix = data.affinity_matrix || {};
   const clusters = data.clusters || {};
   const bridges = data.bridges || {};
+  const expansion = data.expansion || {};
   const nameMap = buildNameMap(communities);
 
   const totalMembers = communities.reduce((sum, community) => sum + community.member_count, 0);
@@ -880,7 +1000,7 @@ function render(data) {
   }
 
   renderClusterTab(communities, clusters);
-  renderBridgeTab(communities, bridges);
+  renderBridgeTab(communities, bridges, expansion);
   renderNetworkGraph(communities, affinities, clusters);
 }
 
