@@ -223,10 +223,15 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write(f"- proposal_id: `{proposal.proposal_id}`\n")
                 f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
                 f.write(f"- base_novelty_score: `{proposal.base_novelty_score:.3f}`\n")
+                f.write(f"- second_order_penalty: `{proposal.second_order_penalty:.3f}`\n")
                 f.write(f"- redundancy_penalty: `{proposal.redundancy_penalty:.3f}`\n")
                 f.write(
                     f"- included_composite_communities: "
                     f"`{', '.join(proposal.included_composite_community_ids) or '-'}`\n"
+                )
+                f.write(
+                    f"- parent_overlap_communities: "
+                    f"`{', '.join(proposal.parent_overlap_community_ids) or '-'}`\n"
                 )
                 f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
                 f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")

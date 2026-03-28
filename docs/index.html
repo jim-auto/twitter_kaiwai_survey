@@ -423,7 +423,7 @@
     </table>
 
     <h3 style="margin:24px 0 10px;">Expansion Proposals</h3>
-    <p style="color:#888;margin-bottom:10px;">Adjusted ranking with redundancy penalty against current composite communities.</p>
+    <p style="color:#888;margin-bottom:10px;">Adjusted ranking with direct composite penalty plus second-order parent-overlap penalty.</p>
     <table>
       <thead>
         <tr>
@@ -770,17 +770,23 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
       const communitiesText = (proposal.community_names || []).map((name, index) => (
         `${name} (${proposal.community_ids[index]})`
       )).join(' / ');
+      const parentOverlapText = (proposal.parent_overlap_community_ids || []).map(cid => (
+        nameMap[cid] || cid
+      )).join(' / ');
       const seeds = (proposal.top_actionable_accounts || []).slice(0, 3).map(account => (
         account.screen_name
           ? `<a href="https://x.com/${account.screen_name}" target="_blank" rel="noreferrer">@${account.screen_name}</a>`
           : account.user_id
       )).join(', ');
+      const communitiesCell = parentOverlapText
+        ? `${communitiesText}<div style="color:#888;font-size:0.85em;">parent overlap: ${parentOverlapText}</div>`
+        : communitiesText;
       target.innerHTML += `<tr>
         <td>${proposal.proposal_name}</td>
-        <td>${communitiesText}</td>
+        <td>${communitiesCell}</td>
         <td>${seeds}</td>
         <td class="num">${proposal.actionable_support_count}</td>
-        <td class="num">${proposal.redundancy_penalty.toFixed(1)}</td>
+        <td class="num" title="second-order=${(proposal.second_order_penalty || 0).toFixed(1)}">${proposal.redundancy_penalty.toFixed(1)}</td>
         <td class="num num-highlight">${proposal.novelty_score.toFixed(3)}</td>
       </tr>`;
     });

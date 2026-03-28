@@ -32,9 +32,11 @@ class ExpansionProposal:
     avg_cluster_count: float
     spillover_community_count: int
     base_novelty_score: float
+    second_order_penalty: float
     redundancy_penalty: float
     novelty_score: float
     included_composite_community_ids: tuple[str, ...]
+    parent_overlap_community_ids: tuple[str, ...]
     category_counts: dict[str, int]
     top_accounts: list[AttentionBridgeAccount]
     top_actionable_accounts: list[AttentionBridgeAccount]
@@ -76,6 +78,67 @@ def load_composite_community_ids() -> set[str]:
         if len(community.hashtags) >= 5 or len(community.keywords) >= 4:
             composite_ids.add(community.id)
     return composite_ids
+
+
+def _load_member_sets(min_confidence: float) -> dict[str, set[str]]:
+    conn = sqlite3.connect(str(DB_PATH))
+    rows = conn.execute(
+        "SELECT community_id, user_id FROM community_members WHERE confidence >= ?",
+        (min_confidence,),
+    ).fetchall()
+    conn.close()
+    member_sets: dict[str, set[str]] = {}
+    for community_id, user_id in rows:
+        member_sets.setdefault(community_id, set()).add(user_id)
+    return member_sets
+
+
+def load_composite_parent_map(
+    composite_community_ids: set[str] | None = None,
+    min_confidence: float = 0.5,
+) -> dict[str, tuple[str, ...]]:
+    composite_ids = composite_community_ids or load_composite_community_ids()
+    community_ids = {community.id for community in load_all_communities()}
+    member_sets = _load_member_sets(min_confidence)
+    parent_map: dict[str, tuple[str, ...]] = {}
+    for composite_id in sorted(composite_ids):
+        lexical_parents = {
+            candidate_id
+            for candidate_id in community_ids
+            if candidate_id != composite_id
+            and len(candidate_id) < len(composite_id)
+            and (
+                composite_id.startswith(f"{candidate_id}_")
+                or composite_id.endswith(f"_{candidate_id}")
+                or f"_{candidate_id}_" in composite_id
+            )
+        }
+        overlap_parents: list[tuple[float, int, str]] = []
+        composite_members = member_sets.get(composite_id, set())
+        composite_size = len(composite_members)
+        if composite_size:
+            for candidate_id, candidate_members in member_sets.items():
+                if (
+                    candidate_id == composite_id
+                    or candidate_id in composite_ids
+                    or not candidate_members
+                ):
+                    continue
+                shared_members = len(composite_members & candidate_members)
+                if shared_members < 2:
+                    continue
+                containment = shared_members / composite_size
+                if containment < 0.08:
+                    continue
+                overlap_parents.append((containment, shared_members, candidate_id))
+        overlap_parents.sort(reverse=True)
+        inferred_overlap_parents = {
+            candidate_id
+            for _, _, candidate_id in overlap_parents[:4]
+        }
+        parents = sorted(lexical_parents | inferred_overlap_parents)
+        parent_map[composite_id] = tuple(parents)
+    return parent_map
 
 
 def _pick_role(account: AttentionBridgeAccount, index: int) -> str:
@@ -121,12 +184,15 @@ def _score_redundancy_penalty(
     *,
     base_novelty_score: float,
     included_composite_community_ids: tuple[str, ...],
+    parent_overlap_count: int = 0,
 ) -> float:
     composite_count = len(included_composite_community_ids)
     if composite_count <= 0 or base_novelty_score <= 0:
         return 0.0
 
     penalty = (base_novelty_score * 0.45 * composite_count) + (12.0 * max(0, composite_count - 1))
+    if parent_overlap_count > 0:
+        penalty += (base_novelty_score * 0.18 * parent_overlap_count) + (8.0 * parent_overlap_count)
     return round(min(base_novelty_score, penalty), 3)
 
 
@@ -138,9 +204,14 @@ def build_expansion_proposals(
     bridge_analysis: BridgeAccountAnalysisResult | None = None,
     exclude_composite_communities: bool = False,
     composite_community_ids: set[str] | None = None,
+    composite_parent_map: dict[str, tuple[str, ...]] | None = None,
 ) -> list[ExpansionProposal]:
     names = _load_community_names()
     composite_community_ids = composite_community_ids or load_composite_community_ids()
+    composite_parent_map = composite_parent_map or load_composite_parent_map(
+        composite_community_ids,
+        min_confidence=min_confidence,
+    )
     bridges = bridge_analysis or detect_bridge_accounts(min_confidence=min_confidence)
     rows = bridges.frontier_seed_view.attention_hubs
 
@@ -181,6 +252,12 @@ def build_expansion_proposals(
         )
         if exclude_composite_communities and included_composite_community_ids:
             continue
+        parent_overlap_community_ids = tuple(sorted({
+            parent_id
+            for composite_id in included_composite_community_ids
+            for parent_id in composite_parent_map.get(composite_id, ())
+            if parent_id in community_ids
+        }))
         support_count = len(account_rows)
         actionable_support_count = len(actionable_rows)
         generic_hub_count = support_count - actionable_support_count
@@ -211,7 +288,13 @@ def build_expansion_proposals(
         redundancy_penalty = _score_redundancy_penalty(
             base_novelty_score=base_novelty_score,
             included_composite_community_ids=included_composite_community_ids,
+            parent_overlap_count=len(parent_overlap_community_ids),
         )
+        second_order_penalty = round(max(redundancy_penalty - min(
+            base_novelty_score,
+            (base_novelty_score * 0.45 * len(included_composite_community_ids))
+            + (12.0 * max(0, len(included_composite_community_ids) - 1)),
+        ), 0.0), 3)
         proposals.append(ExpansionProposal(
             proposal_id=_proposal_id(community_ids),
             proposal_name=_proposal_name(community_names),
@@ -229,9 +312,11 @@ def build_expansion_proposals(
             avg_cluster_count=avg_cluster_count,
             spillover_community_count=len(spillover_community_ids),
             base_novelty_score=base_novelty_score,
+            second_order_penalty=second_order_penalty,
             redundancy_penalty=redundancy_penalty,
             novelty_score=round(max(base_novelty_score - redundancy_penalty, 0.0), 3),
             included_composite_community_ids=included_composite_community_ids,
+            parent_overlap_community_ids=parent_overlap_community_ids,
             category_counts=category_counts,
             top_accounts=account_rows[:10],
             top_actionable_accounts=(actionable_rows or account_rows)[:10],
@@ -273,7 +358,7 @@ def render_markdown(
     lines.append(f"- explore_proposal_count: `{len(explore_proposals)}`")
     lines.append(f"- composite_communities: `{', '.join(sorted(composite_community_ids)) or '-'}`")
     lines.append(
-        "- novelty_score: adjusted score after redundancy penalty against current composite communities"
+        "- novelty_score: adjusted score after direct composite penalty and second-order parent-overlap penalty"
     )
     lines.append("")
 
@@ -291,10 +376,15 @@ def render_markdown(
             lines.append(f"- proposal_id: `{proposal.proposal_id}`")
             lines.append(f"- novelty_score: `{proposal.novelty_score:.3f}`")
             lines.append(f"- base_novelty_score: `{proposal.base_novelty_score:.3f}`")
+            lines.append(f"- second_order_penalty: `{proposal.second_order_penalty:.3f}`")
             lines.append(f"- redundancy_penalty: `{proposal.redundancy_penalty:.3f}`")
             lines.append(
                 f"- included_composite_communities: "
                 f"`{', '.join(proposal.included_composite_community_ids) or '-'}`"
+            )
+            lines.append(
+                f"- parent_overlap_communities: "
+                f"`{', '.join(proposal.parent_overlap_community_ids) or '-'}`"
             )
             lines.append(f"- support_count: `{proposal.support_count}`")
             lines.append(f"- new_account_count: `{proposal.new_account_count}`")
@@ -354,6 +444,7 @@ def write_yaml_stubs(proposals: list[ExpansionProposal], out_dir: Path) -> list[
         lines.append("")
         lines.append(f"# support_count: {proposal.support_count}")
         lines.append(f"# base_novelty_score: {proposal.base_novelty_score:.3f}")
+        lines.append(f"# second_order_penalty: {proposal.second_order_penalty:.3f}")
         lines.append(f"# redundancy_penalty: {proposal.redundancy_penalty:.3f}")
         lines.append(f"# novelty_score: {proposal.novelty_score:.3f}")
         lines.append(f"# new_account_count: {proposal.new_account_count}")
@@ -365,6 +456,7 @@ def write_yaml_stubs(proposals: list[ExpansionProposal], out_dir: Path) -> list[
         lines.append(f"# avg_cluster_count: {proposal.avg_cluster_count:.3f}")
         lines.append(f"# spillover_community_count: {proposal.spillover_community_count}")
         lines.append("# included_composite_communities: " + ", ".join(proposal.included_composite_community_ids))
+        lines.append("# parent_overlap_communities: " + ", ".join(proposal.parent_overlap_community_ids))
         lines.append("# source_communities: " + ", ".join(proposal.community_ids))
         lines.append("")
         lines.append("seeds:")
@@ -420,12 +512,17 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     composite_community_ids = load_composite_community_ids()
+    composite_parent_map = load_composite_parent_map(
+        composite_community_ids,
+        min_confidence=args.confidence,
+    )
     proposals = build_expansion_proposals(
         min_confidence=args.confidence,
         combo_size=args.combo_size,
         min_support=args.min_support,
         max_proposals=args.max_proposals,
         composite_community_ids=composite_community_ids,
+        composite_parent_map=composite_parent_map,
     )
     explore_proposals = build_expansion_proposals(
         min_confidence=args.confidence,
@@ -434,6 +531,7 @@ def main() -> None:
         max_proposals=args.max_proposals,
         exclude_composite_communities=True,
         composite_community_ids=composite_community_ids,
+        composite_parent_map=composite_parent_map,
     )
     report = render_markdown(
         proposals,

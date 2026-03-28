@@ -547,9 +547,12 @@ def build_report(
             lines.append(
                 f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
                 f"base={proposal.base_novelty_score:.3f}, penalty={proposal.redundancy_penalty:.3f}, "
+                f"second_order={proposal.second_order_penalty:.3f}, "
                 f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
                 f"generic={proposal.generic_hub_count}, seed_ratio={proposal.community_seed_ratio:.1%}, "
-                f"composites={','.join(proposal.included_composite_community_ids) or '-'}, communities={communities}"
+                f"composites={','.join(proposal.included_composite_community_ids) or '-'}, "
+                f"parent_overlap={','.join(proposal.parent_overlap_community_ids) or '-'}, "
+                f"communities={communities}"
             )
             for account in proposal.top_actionable_accounts[:3]:
                 lines.append(
