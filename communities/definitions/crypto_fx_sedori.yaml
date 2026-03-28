@@ -3,42 +3,45 @@ name: 仮想通貨・FX・物販界隈
 description: "仮想通貨、FX、物販・副業の境界をまたいで情報発信や収益化を行う投資副業ハイブリッドコミュニティ"
 
 seeds:
-  - username: fiction_log
+  - username: yocchan60
     role: influencer
-  - username: romi_hoshino
+  - username: SOU_BTC
     role: influencer
+  - username: coinpicksjapan
+    role: influencer
+  - username: jack051101
+    role: active
+  - username: crea3244
+    role: active
+  - username: hukugyootaku
+    role: active
   - username: notermind
     role: active
-  - username: tera_topi0619
-    role: active
   - username: noteaffi
-    role: active
-  - username: aotech6
-    role: active
-  - username: unikoukokun
     role: active
 
 hashtags:
   - "#仮想通貨"
-  - "#FX"
-  - "#物販"
   - "#副業"
-  - "#投資"
+  - "#せどり"
 
 keywords:
   - "仮想通貨 FX"
-  - "FX 物販"
+  - "FX 副業"
   - "副業 投資"
-  - "Web3 投資"
-  - "せどり 投資"
+  - "仮想通貨 副業"
+  - "FX せどり"
+  - "物販 投資"
 
 bio_patterns:
-  - "(仮想通貨|暗号資産|Web3|NFT|FX|トレーダー|投資|せどり|物販|副業|収益化|EA|アフィリエイト|物販ビジネス|資産形成)"
+  - "(?=.*(仮想通貨|暗号資産|BTC|ビットコイン|Web3|NFT))(?=.*(FX|トレーダー|投資|副業|せどり|物販))"
+  - "(?=.*(FX|トレーダー))(?=.*(副業|せどり|物販|アフィリエイト|ネットビジネス|収益化))"
+  - "(?=.*(副業|せどり|物販|アフィリエイト|ポイ活))(?=.*(投資|資産形成|仮想通貨|暗号資産|FX))"
 
 exclude_patterns:
-  - "(公式|official|news|press|media|bot|LINE追加|自動売買ツール販売|EA販売)"
+  - "(公式|official|oficial|news|press|media|bot|CanalFX|FXNetworks|latino|brasil|PR|相互フォロー|いいねした人全員フォロー|フォローします|FXEA|自動売買|LINE追加|自動売買ツール販売|EA販売)"
 
 expansion:
   max_depth: 2
-  min_shared_follows: 3
+  min_shared_follows: 4
   max_members: 5000

@@ -103,8 +103,8 @@ def collect_follow_graph(community: CommunityDef, max_seeds: int = 10):
             appearance_count[edge.target_user_id] += 1
 
     existing_ids = get_community_member_ids(session, community.id)
-    # min_shared を動的調整（シード少ない場合は2に下げる）
-    effective_min = min(min_shared, max(2, len(seed_screen_names) // 3))
+    # Respect the configured minimum while avoiding thresholds below 2 on tiny seed sets.
+    effective_min = max(min_shared, max(2, len(seed_screen_names) // 3))
     candidates = {
         uid: count for uid, count in appearance_count.items()
         if count >= effective_min and uid not in existing_ids
