@@ -12,6 +12,7 @@ from typing import Iterable
 
 from analysis.bridge_accounts import AttentionBridgeAccount, detect_bridge_accounts
 from analysis.bridge_accounts import BridgeAccountAnalysisResult
+from communities import load_all_communities
 from config.settings import DB_PATH
 
 
@@ -30,7 +31,10 @@ class ExpansionProposal:
     avg_bridge_score: float
     avg_cluster_count: float
     spillover_community_count: int
+    base_novelty_score: float
+    redundancy_penalty: float
     novelty_score: float
+    included_composite_community_ids: tuple[str, ...]
     category_counts: dict[str, int]
     top_accounts: list[AttentionBridgeAccount]
     top_actionable_accounts: list[AttentionBridgeAccount]
@@ -64,6 +68,14 @@ def _proposal_keywords(community_names: list[str]) -> list[str]:
     if len(short_names) >= 3:
         keywords.append(" ".join(short_names))
     return keywords[:6]
+
+
+def load_composite_community_ids() -> set[str]:
+    composite_ids: set[str] = set()
+    for community in load_all_communities():
+        if len(community.hashtags) >= 5 or len(community.keywords) >= 4:
+            composite_ids.add(community.id)
+    return composite_ids
 
 
 def _pick_role(account: AttentionBridgeAccount, index: int) -> str:
@@ -105,14 +117,30 @@ def _score_proposal(
     )
 
 
+def _score_redundancy_penalty(
+    *,
+    base_novelty_score: float,
+    included_composite_community_ids: tuple[str, ...],
+) -> float:
+    composite_count = len(included_composite_community_ids)
+    if composite_count <= 0 or base_novelty_score <= 0:
+        return 0.0
+
+    penalty = (base_novelty_score * 0.45 * composite_count) + (12.0 * max(0, composite_count - 1))
+    return round(min(base_novelty_score, penalty), 3)
+
+
 def build_expansion_proposals(
     min_confidence: float = 0.5,
     combo_size: int = 3,
     min_support: int = 6,
     max_proposals: int = 12,
     bridge_analysis: BridgeAccountAnalysisResult | None = None,
+    exclude_composite_communities: bool = False,
+    composite_community_ids: set[str] | None = None,
 ) -> list[ExpansionProposal]:
     names = _load_community_names()
+    composite_community_ids = composite_community_ids or load_composite_community_ids()
     bridges = bridge_analysis or detect_bridge_accounts(min_confidence=min_confidence)
     rows = bridges.frontier_seed_view.attention_hubs
 
@@ -147,6 +175,12 @@ def build_expansion_proposals(
         for row in account_rows:
             category_counts[row.account_category] = category_counts.get(row.account_category, 0) + 1
         community_names = tuple(names.get(cid, cid) for cid in community_ids)
+        included_composite_community_ids = tuple(
+            cid for cid in community_ids
+            if cid in composite_community_ids
+        )
+        if exclude_composite_communities and included_composite_community_ids:
+            continue
         support_count = len(account_rows)
         actionable_support_count = len(actionable_rows)
         generic_hub_count = support_count - actionable_support_count
@@ -165,6 +199,19 @@ def build_expansion_proposals(
             for cid in row.source_community_ids
             if cid not in community_ids
         })
+        base_novelty_score = _score_proposal(
+            support_count=support_count,
+            actionable_support_count=actionable_support_count,
+            generic_hub_count=generic_hub_count,
+            total_follow_edges=total_follow_edges,
+            avg_bridge_score=avg_bridge_score,
+            avg_cluster_count=avg_cluster_count,
+            spillover_community_count=len(spillover_community_ids),
+        )
+        redundancy_penalty = _score_redundancy_penalty(
+            base_novelty_score=base_novelty_score,
+            included_composite_community_ids=included_composite_community_ids,
+        )
         proposals.append(ExpansionProposal(
             proposal_id=_proposal_id(community_ids),
             proposal_name=_proposal_name(community_names),
@@ -181,15 +228,10 @@ def build_expansion_proposals(
             avg_bridge_score=avg_bridge_score,
             avg_cluster_count=avg_cluster_count,
             spillover_community_count=len(spillover_community_ids),
-            novelty_score=_score_proposal(
-                support_count=support_count,
-                actionable_support_count=actionable_support_count,
-                generic_hub_count=generic_hub_count,
-                total_follow_edges=total_follow_edges,
-                avg_bridge_score=avg_bridge_score,
-                avg_cluster_count=avg_cluster_count,
-                spillover_community_count=len(spillover_community_ids),
-            ),
+            base_novelty_score=base_novelty_score,
+            redundancy_penalty=redundancy_penalty,
+            novelty_score=round(max(base_novelty_score - redundancy_penalty, 0.0), 3),
+            included_composite_community_ids=included_composite_community_ids,
             category_counts=category_counts,
             top_accounts=account_rows[:10],
             top_actionable_accounts=(actionable_rows or account_rows)[:10],
@@ -211,11 +253,14 @@ def build_expansion_proposals(
 
 def render_markdown(
     proposals: list[ExpansionProposal],
+    explore_proposals: list[ExpansionProposal],
     *,
     min_confidence: float,
     combo_size: int,
     min_support: int,
+    composite_community_ids: set[str] | None = None,
 ) -> str:
+    composite_community_ids = composite_community_ids or load_composite_community_ids()
     lines: list[str] = []
     lines.append("# Frontier Expansion Proposals")
     lines.append("")
@@ -225,54 +270,72 @@ def render_markdown(
     lines.append(f"- combo_size: `{combo_size}`")
     lines.append(f"- min_support: `{min_support}`")
     lines.append(f"- proposal_count: `{len(proposals)}`")
+    lines.append(f"- explore_proposal_count: `{len(explore_proposals)}`")
+    lines.append(f"- composite_communities: `{', '.join(sorted(composite_community_ids)) or '-'}`")
     lines.append(
-        "- novelty_score: heuristic based on new-account count, community-seed ratio, "
-        "bridge lift, spillover coverage, and generic-hub penalty"
+        "- novelty_score: adjusted score after redundancy penalty against current composite communities"
     )
     lines.append("")
 
-    for index, proposal in enumerate(proposals, start=1):
-        lines.append(f"## {index}. {proposal.proposal_name}")
+    def append_section(title: str, rows: list[ExpansionProposal]) -> None:
+        lines.append(f"## {title}")
         lines.append("")
-        lines.append(f"- proposal_id: `{proposal.proposal_id}`")
-        lines.append(f"- novelty_score: `{proposal.novelty_score:.3f}`")
-        lines.append(f"- support_count: `{proposal.support_count}`")
-        lines.append(f"- new_account_count: `{proposal.new_account_count}`")
-        lines.append(f"- actionable_support_count: `{proposal.actionable_support_count}`")
-        lines.append(f"- generic_hub_count: `{proposal.generic_hub_count}`")
-        lines.append(f"- community_seed_ratio: `{proposal.community_seed_ratio:.1%}`")
-        lines.append(f"- total_follow_edges: `{proposal.total_follow_edges}`")
-        lines.append(f"- avg_bridge_score: `{proposal.avg_bridge_score:.3f}`")
-        lines.append(f"- avg_cluster_count: `{proposal.avg_cluster_count:.3f}`")
-        lines.append(f"- spillover_community_count: `{proposal.spillover_community_count}`")
-        lines.append(
-            "- category_counts: " + ", ".join(
-                f"{category}={count}" for category, count in sorted(proposal.category_counts.items())
-            )
-        )
-        lines.append(
-            "- communities: " + ", ".join(
-                f"{name} (`{cid}`)"
-                for cid, name in zip(proposal.community_ids, proposal.community_names)
-            )
-        )
-        lines.append("- top_actionable_accounts:")
-        for account in proposal.top_actionable_accounts[:8]:
-            label = f"@{account.screen_name}" if account.screen_name else account.user_id
+        if not rows:
+            lines.append("- none")
+            lines.append("")
+            return
+
+        for index, proposal in enumerate(rows, start=1):
+            lines.append(f"### {index}. {proposal.proposal_name}")
+            lines.append("")
+            lines.append(f"- proposal_id: `{proposal.proposal_id}`")
+            lines.append(f"- novelty_score: `{proposal.novelty_score:.3f}`")
+            lines.append(f"- base_novelty_score: `{proposal.base_novelty_score:.3f}`")
+            lines.append(f"- redundancy_penalty: `{proposal.redundancy_penalty:.3f}`")
             lines.append(
-                f"  - {label}: edges={account.follow_edge_count}, "
-                f"score={account.bridge_score:.3f}, followers={account.followers_count:,}, "
-                f"type={account.account_category}"
+                f"- included_composite_communities: "
+                f"`{', '.join(proposal.included_composite_community_ids) or '-'}`"
             )
-        lines.append("- top_accounts:")
-        for account in proposal.top_accounts[:8]:
-            label = f"@{account.screen_name}" if account.screen_name else account.user_id
+            lines.append(f"- support_count: `{proposal.support_count}`")
+            lines.append(f"- new_account_count: `{proposal.new_account_count}`")
+            lines.append(f"- actionable_support_count: `{proposal.actionable_support_count}`")
+            lines.append(f"- generic_hub_count: `{proposal.generic_hub_count}`")
+            lines.append(f"- community_seed_ratio: `{proposal.community_seed_ratio:.1%}`")
+            lines.append(f"- total_follow_edges: `{proposal.total_follow_edges}`")
+            lines.append(f"- avg_bridge_score: `{proposal.avg_bridge_score:.3f}`")
+            lines.append(f"- avg_cluster_count: `{proposal.avg_cluster_count:.3f}`")
+            lines.append(f"- spillover_community_count: `{proposal.spillover_community_count}`")
             lines.append(
-                f"  - {label}: edges={account.follow_edge_count}, "
-                f"score={account.bridge_score:.3f}, followers={account.followers_count:,}, "
-                f"type={account.account_category}"
+                "- category_counts: " + ", ".join(
+                    f"{category}={count}" for category, count in sorted(proposal.category_counts.items())
+                )
             )
-        lines.append("")
+            lines.append(
+                "- communities: " + ", ".join(
+                    f"{name} (`{cid}`)"
+                    for cid, name in zip(proposal.community_ids, proposal.community_names)
+                )
+            )
+            lines.append("- top_actionable_accounts:")
+            for account in proposal.top_actionable_accounts[:8]:
+                label = f"@{account.screen_name}" if account.screen_name else account.user_id
+                lines.append(
+                    f"  - {label}: edges={account.follow_edge_count}, "
+                    f"score={account.bridge_score:.3f}, followers={account.followers_count:,}, "
+                    f"type={account.account_category}"
+                )
+            lines.append("- top_accounts:")
+            for account in proposal.top_accounts[:8]:
+                label = f"@{account.screen_name}" if account.screen_name else account.user_id
+                lines.append(
+                    f"  - {label}: edges={account.follow_edge_count}, "
+                    f"score={account.bridge_score:.3f}, followers={account.followers_count:,}, "
+                    f"type={account.account_category}"
+                )
+            lines.append("")
+
+    append_section("Adjusted Ranking", proposals)
+    append_section("Explore Lane", explore_proposals)
 
     return "\n".join(lines) + "\n"
 
@@ -290,6 +353,8 @@ def write_yaml_stubs(proposals: list[ExpansionProposal], out_dir: Path) -> list[
         )
         lines.append("")
         lines.append(f"# support_count: {proposal.support_count}")
+        lines.append(f"# base_novelty_score: {proposal.base_novelty_score:.3f}")
+        lines.append(f"# redundancy_penalty: {proposal.redundancy_penalty:.3f}")
         lines.append(f"# novelty_score: {proposal.novelty_score:.3f}")
         lines.append(f"# new_account_count: {proposal.new_account_count}")
         lines.append(f"# actionable_support_count: {proposal.actionable_support_count}")
@@ -299,6 +364,7 @@ def write_yaml_stubs(proposals: list[ExpansionProposal], out_dir: Path) -> list[
         lines.append(f"# avg_bridge_score: {proposal.avg_bridge_score:.3f}")
         lines.append(f"# avg_cluster_count: {proposal.avg_cluster_count:.3f}")
         lines.append(f"# spillover_community_count: {proposal.spillover_community_count}")
+        lines.append("# included_composite_communities: " + ", ".join(proposal.included_composite_community_ids))
         lines.append("# source_communities: " + ", ".join(proposal.community_ids))
         lines.append("")
         lines.append("seeds:")
@@ -353,17 +419,29 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    composite_community_ids = load_composite_community_ids()
     proposals = build_expansion_proposals(
         min_confidence=args.confidence,
         combo_size=args.combo_size,
         min_support=args.min_support,
         max_proposals=args.max_proposals,
+        composite_community_ids=composite_community_ids,
     )
-    report = render_markdown(
-        proposals,
+    explore_proposals = build_expansion_proposals(
         min_confidence=args.confidence,
         combo_size=args.combo_size,
         min_support=args.min_support,
+        max_proposals=args.max_proposals,
+        exclude_composite_communities=True,
+        composite_community_ids=composite_community_ids,
+    )
+    report = render_markdown(
+        proposals,
+        explore_proposals,
+        min_confidence=args.confidence,
+        combo_size=args.combo_size,
+        min_support=args.min_support,
+        composite_community_ids=composite_community_ids,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(report, encoding="utf-8")

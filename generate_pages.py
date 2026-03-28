@@ -19,7 +19,7 @@ from analysis.overlap import (
     compute_follow_affinity,
     compute_pairwise_overlap,
 )
-from tools.frontier_expansion import build_expansion_proposals
+from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
 
 MARKER_START = "// __REPORT_DATA_START__"
 MARKER_END = "// __REPORT_DATA_END__"
@@ -58,13 +58,14 @@ def _trim_report_data_for_pages(report_data: dict[str, object]) -> dict[str, obj
 
     expansion = page_data.get("expansion", {})
     if expansion:
-        proposals = list(expansion.get("proposals", []))[:MAX_PROPOSALS]
-        for proposal in proposals:
-            proposal["top_accounts"] = list(proposal.get("top_accounts", []))[:MAX_PROPOSAL_ACCOUNTS]
-            proposal["top_actionable_accounts"] = list(
-                proposal.get("top_actionable_accounts", [])
-            )[:MAX_PROPOSAL_ACCOUNTS]
-        expansion["proposals"] = proposals
+        for key in ("proposals", "explore_proposals"):
+            proposals = list(expansion.get(key, []))[:MAX_PROPOSALS]
+            for proposal in proposals:
+                proposal["top_accounts"] = list(proposal.get("top_accounts", []))[:MAX_PROPOSAL_ACCOUNTS]
+                proposal["top_actionable_accounts"] = list(
+                    proposal.get("top_actionable_accounts", [])
+                )[:MAX_PROPOSAL_ACCOUNTS]
+            expansion[key] = proposals
     return page_data
 
 
@@ -80,9 +81,17 @@ def generate_pages(min_confidence: float = 0.5) -> None:
         min_confidence=min_confidence,
         cluster_analysis=clusters,
     )
+    composite_community_ids = load_composite_community_ids()
     expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
+        composite_community_ids=composite_community_ids,
+    )
+    explore_expansion_proposals = build_expansion_proposals(
+        min_confidence=min_confidence,
+        bridge_analysis=bridges,
+        exclude_composite_communities=True,
+        composite_community_ids=composite_community_ids,
     )
 
     report_data = {
@@ -103,7 +112,9 @@ def generate_pages(min_confidence: float = 0.5) -> None:
         "expansion": {
             "combo_size": 3,
             "min_support": 6,
+            "composite_community_ids": sorted(composite_community_ids),
             "proposals": [asdict(proposal) for proposal in expansion_proposals],
+            "explore_proposals": [asdict(proposal) for proposal in explore_expansion_proposals],
         },
     }
 
@@ -159,6 +170,7 @@ def generate_pages(min_confidence: float = 0.5) -> None:
     print(f"  Bridge hubs without nanpa: {bridges.no_nanpa_view.attention_hub_count}")
     print(f"  Frontier candidates: {bridges.frontier_view.attention_hub_count}")
     print(f"  Expansion proposals: {len(expansion_proposals)}")
+    print(f"  Explore proposals: {len(explore_expansion_proposals)}")
 
 
 if __name__ == "__main__":

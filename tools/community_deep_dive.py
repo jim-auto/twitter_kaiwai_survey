@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from analysis.bridge_accounts import AttentionBridgeView, detect_bridge_accounts
 from analysis.clustering import detect_affinity_clusters
 from config.settings import DB_PATH, EXPORT_DIR
-from tools.frontier_expansion import build_expansion_proposals
+from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
 
 
 def load_names(conn: sqlite3.Connection) -> dict[str, str]:
@@ -359,9 +359,17 @@ def build_report(
         min_confidence=high_confidence,
         cluster_analysis=clusters,
     )
+    composite_community_ids = load_composite_community_ids()
     expansion_proposals = build_expansion_proposals(
         min_confidence=high_confidence,
         bridge_analysis=bridge_analysis,
+        composite_community_ids=composite_community_ids,
+    )
+    explore_expansion_proposals = build_expansion_proposals(
+        min_confidence=high_confidence,
+        bridge_analysis=bridge_analysis,
+        exclude_composite_communities=True,
+        composite_community_ids=composite_community_ids,
     )
 
     community_rows = cross_metrics["community_rows"]
@@ -502,6 +510,12 @@ def build_report(
     lines.append(
         f"- expansion proposals: `{len(expansion_proposals)}`"
     )
+    lines.append(
+        f"- explore proposals: `{len(explore_expansion_proposals)}`"
+    )
+    lines.append(
+        f"- composite communities: `{', '.join(sorted(composite_community_ids)) or '-'}`"
+    )
     lines.append("")
 
     append_attention_view(lines, names, bridge_analysis.all_view, limit=10)
@@ -532,9 +546,31 @@ def build_report(
             )
             lines.append(
                 f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
+                f"base={proposal.base_novelty_score:.3f}, penalty={proposal.redundancy_penalty:.3f}, "
                 f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
                 f"generic={proposal.generic_hub_count}, seed_ratio={proposal.community_seed_ratio:.1%}, "
-                f"communities={communities}"
+                f"composites={','.join(proposal.included_composite_community_ids) or '-'}, communities={communities}"
+            )
+            for account in proposal.top_actionable_accounts[:3]:
+                lines.append(
+                    f"-   @{account.screen_name}: score={account.bridge_score:.3f}, "
+                    f"type={account.account_category}, edges={account.follow_edge_count}"
+                )
+    else:
+        lines.append("- None at this threshold")
+    lines.append("")
+
+    lines.append("### Explore Lane")
+    if explore_expansion_proposals:
+        for proposal in explore_expansion_proposals[:8]:
+            communities = ", ".join(
+                f"{name} (`{cid}`)"
+                for cid, name in zip(proposal.community_ids, proposal.community_names)
+            )
+            lines.append(
+                f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
+                f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
+                f"generic={proposal.generic_hub_count}, communities={communities}"
             )
             for account in proposal.top_actionable_accounts[:3]:
                 lines.append(

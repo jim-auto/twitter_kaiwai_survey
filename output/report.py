@@ -10,7 +10,7 @@ from analysis.clustering import detect_affinity_clusters
 from analysis.community_size import compute_all_sizes
 from analysis.overlap import build_overlap_matrix, compute_pairwise_overlap
 from config.settings import EXPORT_DIR
-from tools.frontier_expansion import build_expansion_proposals
+from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
 
 
 def _format_attention_account(account) -> str:
@@ -99,9 +99,17 @@ def generate_report(min_confidence: float = 0.5) -> None:
         min_confidence=min_confidence,
         cluster_analysis=clusters,
     )
+    composite_community_ids = load_composite_community_ids()
     expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
+        composite_community_ids=composite_community_ids,
+    )
+    explore_expansion_proposals = build_expansion_proposals(
+        min_confidence=min_confidence,
+        bridge_analysis=bridges,
+        exclude_composite_communities=True,
+        composite_community_ids=composite_community_ids,
     )
 
     report_data = {
@@ -117,7 +125,9 @@ def generate_report(min_confidence: float = 0.5) -> None:
         "expansion": {
             "combo_size": 3,
             "min_support": 6,
+            "composite_community_ids": sorted(composite_community_ids),
             "proposals": [asdict(proposal) for proposal in expansion_proposals],
+            "explore_proposals": [asdict(proposal) for proposal in explore_expansion_proposals],
         },
     }
 
@@ -199,7 +209,11 @@ def generate_report(min_confidence: float = 0.5) -> None:
             f.write("- none\n")
 
         f.write("\n## Expansion Proposals\n\n")
+        f.write(
+            f"- composite_communities: `{', '.join(sorted(composite_community_ids)) or '-'}`\n"
+        )
         if expansion_proposals:
+            f.write("\n### Adjusted Ranking\n\n")
             for proposal in expansion_proposals:
                 communities = ", ".join(
                     f"{name} (`{cid}`)"
@@ -208,6 +222,12 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write(f"### {proposal.proposal_name}\n\n")
                 f.write(f"- proposal_id: `{proposal.proposal_id}`\n")
                 f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
+                f.write(f"- base_novelty_score: `{proposal.base_novelty_score:.3f}`\n")
+                f.write(f"- redundancy_penalty: `{proposal.redundancy_penalty:.3f}`\n")
+                f.write(
+                    f"- included_composite_communities: "
+                    f"`{', '.join(proposal.included_composite_community_ids) or '-'}`\n"
+                )
                 f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
                 f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")
                 f.write(f"- generic_hub_count: `{proposal.generic_hub_count}`\n")
@@ -223,6 +243,25 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write("\n")
         else:
             f.write("- none\n")
+
+        if explore_expansion_proposals:
+            f.write("\n### Explore Lane\n\n")
+            for proposal in explore_expansion_proposals:
+                communities = ", ".join(
+                    f"{name} (`{cid}`)"
+                    for cid, name in zip(proposal.community_ids, proposal.community_names)
+                )
+                f.write(f"### {proposal.proposal_name}\n\n")
+                f.write(f"- proposal_id: `{proposal.proposal_id}`\n")
+                f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
+                f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
+                f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")
+                f.write(f"- generic_hub_count: `{proposal.generic_hub_count}`\n")
+                f.write(f"- communities: {communities}\n")
+                f.write("- top_actionable_accounts:\n")
+                for account in proposal.top_actionable_accounts[:6]:
+                    f.write(_format_attention_account(account) + "\n")
+                f.write("\n")
 
         f.write("\n## Top Influencers\n\n")
         for size in sizes:
@@ -270,4 +309,5 @@ def generate_report(min_confidence: float = 0.5) -> None:
         print(
             " | proposals="
             f"{len(expansion_proposals)} top={expansion_proposals[0].proposal_id}"
+            f" explore={explore_expansion_proposals[0].proposal_id if explore_expansion_proposals else '-'}"
         )

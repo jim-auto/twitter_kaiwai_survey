@@ -423,20 +423,34 @@
     </table>
 
     <h3 style="margin:24px 0 10px;">Expansion Proposals</h3>
-    <p style="color:#888;margin-bottom:10px;">Novelty score favors new accounts, community-seed density, and bridge lift while penalizing generic hubs.</p>
+    <p style="color:#888;margin-bottom:10px;">Adjusted ranking with redundancy penalty against current composite communities.</p>
     <table>
       <thead>
         <tr>
           <th>Proposal</th>
           <th>Communities</th>
           <th>Example Seeds</th>
-          <th class="num">New</th>
           <th class="num">Actionable</th>
-          <th class="num">Generic</th>
+          <th class="num">Penalty</th>
           <th class="num">Novelty</th>
         </tr>
       </thead>
       <tbody id="proposal-table"></tbody>
+    </table>
+
+    <h3 style="margin:24px 0 10px;">Explore Lane</h3>
+    <p style="color:#888;margin-bottom:10px;">Proposals that exclude current composite communities such as promoted hybrid definitions.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Proposal</th>
+          <th>Communities</th>
+          <th>Example Seeds</th>
+          <th class="num">Actionable</th>
+          <th class="num">Novelty</th>
+        </tr>
+      </thead>
+      <tbody id="proposal-explore-table"></tbody>
     </table>
   </div>
 
@@ -633,14 +647,17 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
   const frontierActionableTable = document.getElementById('bridge-frontier-actionable-table');
   const frontierGenericTable = document.getElementById('bridge-frontier-generic-table');
   const proposalTable = document.getElementById('proposal-table');
-  if (!summary || !table || !crossTable || !pairTable || !noNanpaTable || !frontierTable || !frontierSeedTable || !frontierActionableTable || !frontierGenericTable || !proposalTable) return;
+  const exploreProposalTable = document.getElementById('proposal-explore-table');
+  if (!summary || !table || !crossTable || !pairTable || !noNanpaTable || !frontierTable || !frontierSeedTable || !frontierActionableTable || !frontierGenericTable || !proposalTable || !exploreProposalTable) return;
 
   const nameMap = buildNameMap(communities);
   const allView = bridgeData?.all_view || {};
   const noNanpaView = bridgeData?.no_nanpa_view || {};
   const frontierView = bridgeData?.frontier_view || {};
   const frontierSeedView = bridgeData?.frontier_seed_view || {};
+  const compositeCommunityIds = expansionData?.composite_community_ids || [];
   const proposals = (expansionData?.proposals || []).slice(0, 12);
+  const exploreProposals = (expansionData?.explore_proposals || []).slice(0, 12);
   const topAccounts = (allView.attention_hubs || bridgeData?.attention_hubs || []).slice(0, 120);
   const crossAccounts = (allView.cross_cluster_attention_hubs || bridgeData?.cross_cluster_attention_hubs || []).slice(0, 120);
   const clusterPairs = (allView.cluster_pairs || bridgeData?.cluster_pairs || []).slice(0, 40);
@@ -686,6 +703,14 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
     <div class="cluster-panel">
       <div class="eyebrow">Proposals</div>
       <div class="value">${proposals.length}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Explore Lane</div>
+      <div class="value">${exploreProposals.length}</div>
+    </div>
+    <div class="cluster-panel">
+      <div class="eyebrow">Composites</div>
+      <div class="value">${compositeCommunityIds.length}</div>
     </div>
   `;
 
@@ -738,7 +763,7 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
   const renderProposalRows = (rows, target) => {
     target.innerHTML = '';
     if (!rows.length) {
-      target.innerHTML = '<tr><td colspan="7" style="color:#888;">No data</td></tr>';
+      target.innerHTML = '<tr><td colspan="6" style="color:#888;">No data</td></tr>';
       return;
     }
     rows.forEach(proposal => {
@@ -754,9 +779,33 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
         <td>${proposal.proposal_name}</td>
         <td>${communitiesText}</td>
         <td>${seeds}</td>
-        <td class="num">${proposal.new_account_count}</td>
         <td class="num">${proposal.actionable_support_count}</td>
-        <td class="num">${proposal.generic_hub_count}</td>
+        <td class="num">${proposal.redundancy_penalty.toFixed(1)}</td>
+        <td class="num num-highlight">${proposal.novelty_score.toFixed(3)}</td>
+      </tr>`;
+    });
+  };
+
+  const renderExploreProposalRows = (rows, target) => {
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.innerHTML = '<tr><td colspan="5" style="color:#888;">No data</td></tr>';
+      return;
+    }
+    rows.forEach(proposal => {
+      const communitiesText = (proposal.community_names || []).map((name, index) => (
+        `${name} (${proposal.community_ids[index]})`
+      )).join(' / ');
+      const seeds = (proposal.top_actionable_accounts || []).slice(0, 3).map(account => (
+        account.screen_name
+          ? `<a href="https://x.com/${account.screen_name}" target="_blank" rel="noreferrer">@${account.screen_name}</a>`
+          : account.user_id
+      )).join(', ');
+      target.innerHTML += `<tr>
+        <td>${proposal.proposal_name}</td>
+        <td>${communitiesText}</td>
+        <td>${seeds}</td>
+        <td class="num">${proposal.actionable_support_count}</td>
         <td class="num num-highlight">${proposal.novelty_score.toFixed(3)}</td>
       </tr>`;
     });
@@ -771,6 +820,7 @@ function renderBridgeTab(communities, bridgeData, expansionData) {
   renderAccountRows(frontierActionableAccounts, frontierActionableTable);
   renderAccountRows(frontierGenericAccounts, frontierGenericTable);
   renderProposalRows(proposals, proposalTable);
+  renderExploreProposalRows(exploreProposals, exploreProposalTable);
 }
 
 function renderNetworkGraph(communities, affinities, clusterData) {

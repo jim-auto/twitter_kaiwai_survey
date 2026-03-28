@@ -126,15 +126,26 @@ def frontier_expand(confidence, combo_size, min_support, max_proposals, write_ya
 
     from tools.frontier_expansion import (
         build_expansion_proposals,
+        load_composite_community_ids,
         render_markdown,
         write_yaml_stubs,
     )
 
+    composite_community_ids = load_composite_community_ids()
     proposals = build_expansion_proposals(
         min_confidence=confidence,
         combo_size=combo_size,
         min_support=min_support,
         max_proposals=max_proposals,
+        composite_community_ids=composite_community_ids,
+    )
+    explore_proposals = build_expansion_proposals(
+        min_confidence=confidence,
+        combo_size=combo_size,
+        min_support=min_support,
+        max_proposals=max_proposals,
+        exclude_composite_communities=True,
+        composite_community_ids=composite_community_ids,
     )
 
     output_path = Path("data/exports/frontier_expansion_2026-03-27.md")
@@ -142,9 +153,11 @@ def frontier_expand(confidence, combo_size, min_support, max_proposals, write_ya
     output_path.write_text(
         render_markdown(
             proposals,
+            explore_proposals,
             min_confidence=confidence,
             combo_size=combo_size,
             min_support=min_support,
+            composite_community_ids=composite_community_ids,
         ),
         encoding="utf-8",
     )
