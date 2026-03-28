@@ -1,0 +1,44 @@
+id: anime_gaming_vtuber
+name: アニメ・ゲーム・VTuber界隈
+description: "アニメ、ゲーム、VTuber を横断している配信・ネットエンタメ寄りのハイブリッドコミュニティ"
+
+seeds:
+  - username: Sara_Hoshikawa
+    role: influencer
+  - username: SAK_SAK_SAKUMA
+    role: influencer
+  - username: Genshin_7
+    role: active
+  - username: Ayase_0404
+    role: active
+  - username: mafia_kajita
+    role: active
+  - username: _amatsuki_
+    role: active
+  - username: Sora_Sakurai
+    role: active
+  - username: yashi09
+    role: active
+
+hashtags:
+  - "#アニメ"
+  - "#ゲーム"
+  - "#VTuber"
+  - "#ゲーム実況"
+
+keywords:
+  - "アニメ ゲーム VTuber"
+  - "ゲーム実況 VTuber"
+  - "アニメ 配信者"
+  - "サブカル 配信"
+
+bio_patterns:
+  - "(アニメ|ゲーム|VTuber|Vtuber|ゲーム実況|配信者|ストリーマー|にじさんじ|ホロライブ|歌い手)"
+
+exclude_patterns:
+  - "(公式|official|news|press|media|まとめ|切り抜き|bot)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 3
+  max_members: 5000
