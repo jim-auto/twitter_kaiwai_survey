@@ -1,0 +1,44 @@
+id: anime_food_vtuber
+name: アニメ・グルメ・VTuber界隈
+description: "アニメ・VTuber・配信カルチャーと、グルメ・料理・食べ歩きの話題が強く交差するハイブリッドコミュニティ"
+
+seeds:
+  - username: egutakuya
+    role: influencer
+  - username: room_vault
+    role: influencer
+  - username: shiromanta1020
+    role: active
+  - username: k4sen
+    role: active
+  - username: hachi_08
+    role: active
+  - username: Ryouhey_Drunk
+    role: active
+  - username: amasakikohei
+    role: active
+  - username: MitoTsukino
+    role: active
+
+hashtags:
+  - "#アニメ"
+  - "#グルメ"
+  - "#VTuber"
+
+keywords:
+  - "アニメ グルメ VTuber"
+  - "アニメ 飯テロ"
+  - "VTuber グルメ"
+  - "オタク グルメ"
+  - "声優 グルメ"
+
+bio_patterns:
+  - "(?=.*(アニメ|漫画|声優|オタク|VTuber|Vtuber|ホロライブ|にじさんじ))(?=.*(グルメ|料理|レシピ|食べ歩き|飯テロ|ラーメン|居酒屋|ごはん))"
+
+exclude_patterns:
+  - "(公式|official|news|press|media|bot|PR)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 4
+  max_members: 5000
