@@ -1,0 +1,45 @@
+id: trader_fitness
+name: 投資筋トレ界隈
+description: "仮想通貨・FX・投資の発信と、筋トレ・ボディメイク・フィットネス文脈が同居するハイブリッドコミュニティ"
+
+seeds:
+  - username: yocchan60
+    role: influencer
+  - username: coinpicksjapan
+    role: influencer
+  - username: YokokawaNaotaka
+    role: influencer
+  - username: ShinjukuSokai
+    role: active
+  - username: maslow_design
+    role: active
+  - username: ka2aki86
+    role: active
+  - username: 30R9gmaMUy3guDJ
+    role: active
+  - username: aogakusei_
+    role: active
+
+hashtags:
+  - "#筋トレ"
+  - "#ボディメイク"
+  - "#仮想通貨"
+  - "#FX"
+
+keywords:
+  - "筋トレ 投資"
+  - "FX 筋トレ"
+  - "仮想通貨 筋トレ"
+  - "トレーダー フィットネス"
+  - "ボディメイク 投資"
+
+bio_patterns:
+  - "(?=.*(筋トレ|フィットネス|ボディメイク|トレーニング|プロテイン|IFBB|JBBF))(?=.*(仮想通貨|暗号資産|FX|トレーダー|投資|資産形成|BTC|Web3))"
+
+exclude_patterns:
+  - "(公式|official|news|press|media|bot|Bloomberg|xai|PR|相互フォロー|EA販売|自動売買)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 4
+  max_members: 5000
