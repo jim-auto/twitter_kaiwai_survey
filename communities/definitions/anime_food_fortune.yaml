@@ -1,0 +1,44 @@
+id: anime_food_fortune
+name: アニメ・グルメ・スピリチュアル界隈
+description: "アニメ・漫画・オタク文化と、グルメ・料理・占い・スピリチュアル文脈が同居するハイブリッドコミュニティ"
+
+seeds:
+  - username: H_KANNA_0203
+    role: influencer
+  - username: shoko55mmts
+    role: influencer
+  - username: okazaki_taiiku
+    role: active
+  - username: naoyainoue_410
+    role: active
+  - username: 00_yuki_Y
+    role: active
+  - username: YAMA414
+    role: active
+  - username: fukudamaki
+    role: active
+  - username: Computerozi
+    role: active
+
+hashtags:
+  - "#アニメ"
+  - "#グルメ"
+  - "#占い"
+
+keywords:
+  - "アニメ グルメ 占い"
+  - "アニメ 飯テロ"
+  - "オタク グルメ"
+  - "アニメ スピリチュアル"
+  - "声優 グルメ 占い"
+
+bio_patterns:
+  - "(?=.*(アニメ|漫画|声優|オタク|VTuber|俳優|タレント|芸人))(?=.*(グルメ|料理|レシピ|食べ歩き|飯テロ|占い|スピリチュアル|タロット))"
+
+exclude_patterns:
+  - "(公式|official|news|press|media|bot|PR)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 4
+  max_members: 5000
