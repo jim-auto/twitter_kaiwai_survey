@@ -10,7 +10,12 @@ from analysis.clustering import detect_affinity_clusters
 from analysis.community_size import compute_all_sizes
 from analysis.overlap import build_overlap_matrix, compute_pairwise_overlap
 from config.settings import EXPORT_DIR
-from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
+from tools.frontier_expansion import (
+    build_expansion_proposals,
+    build_family_pair_audit,
+    load_composite_community_ids,
+    load_family_pair_map,
+)
 
 
 def _format_attention_account(account) -> str:
@@ -100,16 +105,27 @@ def generate_report(min_confidence: float = 0.5) -> None:
         cluster_analysis=clusters,
     )
     composite_community_ids = load_composite_community_ids()
+    family_pair_map = load_family_pair_map(
+        composite_community_ids=composite_community_ids,
+        min_confidence=min_confidence,
+    )
+    family_pair_audit = build_family_pair_audit(
+        composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
+        min_confidence=min_confidence,
+    )
     expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
     explore_expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
         exclude_composite_communities=True,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
 
     report_data = {
@@ -126,6 +142,7 @@ def generate_report(min_confidence: float = 0.5) -> None:
             "combo_size": 3,
             "min_support": 6,
             "composite_community_ids": sorted(composite_community_ids),
+            "family_pairs": [asdict(row) for row in family_pair_audit],
             "proposals": [asdict(proposal) for proposal in expansion_proposals],
             "explore_proposals": [asdict(proposal) for proposal in explore_expansion_proposals],
         },
@@ -212,6 +229,16 @@ def generate_report(min_confidence: float = 0.5) -> None:
         f.write(
             f"- composite_communities: `{', '.join(sorted(composite_community_ids)) or '-'}`\n"
         )
+        f.write(f"- family_pairs: `{len(family_pair_audit)}`\n")
+        if family_pair_audit:
+            f.write("- top_family_pairs:\n")
+            for row in family_pair_audit[:10]:
+                pair_names = " x ".join(row.community_names)
+                hybrids = ", ".join(row.composite_community_names) or "-"
+                f.write(
+                    f"  - {pair_names} (`{row.pair_key}`): "
+                    f"coverage={row.coverage_count}, hybrids={hybrids}\n"
+                )
         if expansion_proposals:
             f.write("\n### Adjusted Ranking\n\n")
             for proposal in expansion_proposals:
@@ -224,6 +251,7 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
                 f.write(f"- base_novelty_score: `{proposal.base_novelty_score:.3f}`\n")
                 f.write(f"- second_order_penalty: `{proposal.second_order_penalty:.3f}`\n")
+                f.write(f"- family_penalty: `{proposal.family_penalty:.3f}`\n")
                 f.write(f"- redundancy_penalty: `{proposal.redundancy_penalty:.3f}`\n")
                 f.write(
                     f"- included_composite_communities: "
@@ -232,6 +260,10 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write(
                     f"- parent_overlap_communities: "
                     f"`{', '.join(proposal.parent_overlap_community_ids) or '-'}`\n"
+                )
+                f.write(
+                    f"- family_overlap_pairs: "
+                    f"`{', '.join(proposal.family_overlap_pair_keys) or '-'}`\n"
                 )
                 f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
                 f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")
@@ -259,6 +291,11 @@ def generate_report(min_confidence: float = 0.5) -> None:
                 f.write(f"### {proposal.proposal_name}\n\n")
                 f.write(f"- proposal_id: `{proposal.proposal_id}`\n")
                 f.write(f"- novelty_score: `{proposal.novelty_score:.3f}`\n")
+                f.write(f"- family_penalty: `{proposal.family_penalty:.3f}`\n")
+                f.write(
+                    f"- family_overlap_pairs: "
+                    f"`{', '.join(proposal.family_overlap_pair_keys) or '-'}`\n"
+                )
                 f.write(f"- new_account_count: `{proposal.new_account_count}`\n")
                 f.write(f"- actionable_support_count: `{proposal.actionable_support_count}`\n")
                 f.write(f"- generic_hub_count: `{proposal.generic_hub_count}`\n")

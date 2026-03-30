@@ -19,7 +19,12 @@ from analysis.overlap import (
     compute_follow_affinity,
     compute_pairwise_overlap,
 )
-from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
+from tools.frontier_expansion import (
+    build_expansion_proposals,
+    build_family_pair_audit,
+    load_composite_community_ids,
+    load_family_pair_map,
+)
 
 MARKER_START = "// __REPORT_DATA_START__"
 MARKER_END = "// __REPORT_DATA_END__"
@@ -82,16 +87,27 @@ def generate_pages(min_confidence: float = 0.5) -> None:
         cluster_analysis=clusters,
     )
     composite_community_ids = load_composite_community_ids()
+    family_pair_map = load_family_pair_map(
+        composite_community_ids=composite_community_ids,
+        min_confidence=min_confidence,
+    )
+    family_pair_audit = build_family_pair_audit(
+        composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
+        min_confidence=min_confidence,
+    )
     expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
     explore_expansion_proposals = build_expansion_proposals(
         min_confidence=min_confidence,
         bridge_analysis=bridges,
         exclude_composite_communities=True,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
 
     report_data = {
@@ -113,6 +129,7 @@ def generate_pages(min_confidence: float = 0.5) -> None:
             "combo_size": 3,
             "min_support": 6,
             "composite_community_ids": sorted(composite_community_ids),
+            "family_pairs": [asdict(row) for row in family_pair_audit],
             "proposals": [asdict(proposal) for proposal in expansion_proposals],
             "explore_proposals": [asdict(proposal) for proposal in explore_expansion_proposals],
         },

@@ -15,7 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from analysis.bridge_accounts import AttentionBridgeView, detect_bridge_accounts
 from analysis.clustering import detect_affinity_clusters
 from config.settings import DB_PATH, EXPORT_DIR
-from tools.frontier_expansion import build_expansion_proposals, load_composite_community_ids
+from tools.frontier_expansion import (
+    build_expansion_proposals,
+    build_family_pair_audit,
+    load_composite_community_ids,
+    load_family_pair_map,
+)
 
 
 def load_names(conn: sqlite3.Connection) -> dict[str, str]:
@@ -360,16 +365,28 @@ def build_report(
         cluster_analysis=clusters,
     )
     composite_community_ids = load_composite_community_ids()
+    family_pair_map = load_family_pair_map(
+        composite_community_ids=composite_community_ids,
+        min_confidence=high_confidence,
+    )
+    family_pair_audit = build_family_pair_audit(
+        composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
+        min_confidence=high_confidence,
+        names=names,
+    )
     expansion_proposals = build_expansion_proposals(
         min_confidence=high_confidence,
         bridge_analysis=bridge_analysis,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
     explore_expansion_proposals = build_expansion_proposals(
         min_confidence=high_confidence,
         bridge_analysis=bridge_analysis,
         exclude_composite_communities=True,
         composite_community_ids=composite_community_ids,
+        family_pair_map=family_pair_map,
     )
 
     community_rows = cross_metrics["community_rows"]
@@ -516,6 +533,7 @@ def build_report(
     lines.append(
         f"- composite communities: `{', '.join(sorted(composite_community_ids)) or '-'}`"
     )
+    lines.append(f"- family pairs: `{len(family_pair_audit)}`")
     lines.append("")
 
     append_attention_view(lines, names, bridge_analysis.all_view, limit=10)
@@ -538,6 +556,17 @@ def build_report(
     lines.append("")
 
     lines.append("### Expansion Proposals")
+    if family_pair_audit:
+        lines.append("- family audit:")
+        for row in family_pair_audit[:8]:
+            pair_names = " x ".join(row.community_names)
+            hybrids = ", ".join(
+                f"{name} (`{cid}`)"
+                for cid, name in zip(row.composite_community_ids, row.composite_community_names)
+            )
+            lines.append(
+                f"-   {pair_names}: coverage={row.coverage_count}, hybrids={hybrids or '-'}"
+            )
     if expansion_proposals:
         for proposal in expansion_proposals[:8]:
             communities = ", ".join(
@@ -548,10 +577,12 @@ def build_report(
                 f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
                 f"base={proposal.base_novelty_score:.3f}, penalty={proposal.redundancy_penalty:.3f}, "
                 f"second_order={proposal.second_order_penalty:.3f}, "
+                f"family_penalty={proposal.family_penalty:.3f}, "
                 f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
                 f"generic={proposal.generic_hub_count}, seed_ratio={proposal.community_seed_ratio:.1%}, "
                 f"composites={','.join(proposal.included_composite_community_ids) or '-'}, "
                 f"parent_overlap={','.join(proposal.parent_overlap_community_ids) or '-'}, "
+                f"family_overlap={','.join(proposal.family_overlap_pair_keys) or '-'}, "
                 f"communities={communities}"
             )
             for account in proposal.top_actionable_accounts[:3]:
@@ -572,8 +603,11 @@ def build_report(
             )
             lines.append(
                 f"- {proposal.proposal_name}: novelty={proposal.novelty_score:.3f}, "
+                f"family_penalty={proposal.family_penalty:.3f}, "
                 f"new_accounts={proposal.new_account_count}, actionable={proposal.actionable_support_count}, "
-                f"generic={proposal.generic_hub_count}, communities={communities}"
+                f"generic={proposal.generic_hub_count}, "
+                f"family_overlap={','.join(proposal.family_overlap_pair_keys) or '-'}, "
+                f"communities={communities}"
             )
             for account in proposal.top_actionable_accounts[:3]:
                 lines.append(
