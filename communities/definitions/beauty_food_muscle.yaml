@@ -1,0 +1,40 @@
+id: beauty_food_muscle
+name: 美容・グルメ・筋トレ界隈
+description: "美容・食事・ボディメイクを一体で発信するアカウント群を拾う、ウェルネス寄りのハイブリッドコミュニティ"
+
+seeds:
+  - username: akari_hasegawa
+    role: influencer
+  - username: muji_net
+    role: active
+  - username: yukirin_u
+    role: active
+  - username: popoen_
+    role: active
+  - username: YouTubeJapan
+    role: active
+
+hashtags:
+  - "#美容"
+  - "#グルメ"
+  - "#筋トレ"
+  - "#ダイエット"
+
+keywords:
+  - "美容 グルメ 筋トレ"
+  - "美容 ダイエット 食事"
+  - "ボディメイク レシピ"
+  - "ヘルシー ごはん 筋トレ"
+  - "自分磨き 食事管理"
+
+bio_patterns:
+  - "(?=.*(美容|コスメ|スキンケア|メイク|美容オタク))(?=.*(グルメ|料理|レシピ|ごはん|カフェ|食べ歩き))(?=.*(筋トレ|ボディメイク|フィットネス|トレーニング|ダイエット))"
+  - "(?=.*(美容|ダイエット|ヘルシー|自分磨き))(?=.*(食事|ごはん|レシピ|グルメ))(?=.*(筋トレ|ボディメイク|ピラティス|フィットネス))"
+
+exclude_patterns:
+  - "(公式|official|news|press|media|bot|PR|fashionpress|企業アカウント)"
+
+expansion:
+  max_depth: 2
+  min_shared_follows: 4
+  max_members: 5000
