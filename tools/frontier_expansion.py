@@ -215,7 +215,7 @@ def build_family_pair_audit(
 
 
 def _pick_role(account: AttentionBridgeAccount, index: int) -> str:
-    if account.account_category in {"media_hub", "official_hub"}:
+    if account.account_category in {"media_hub", "official_hub", "placeholder_hub"}:
         return "media"
     if account.account_category == "celebrity_hub":
         return "influencer"

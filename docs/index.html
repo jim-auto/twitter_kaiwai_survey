@@ -634,6 +634,7 @@ function accountCategoryLabel(category) {
     media_hub: 'Media',
     official_hub: 'Official',
     celebrity_hub: 'Celebrity',
+    placeholder_hub: 'Placeholder',
   };
   return labels[category] || category || '-';
 }
@@ -644,6 +645,7 @@ function accountCategoryBadge(category) {
     media_hub: ['#fbbf24', 'rgba(251,191,36,0.15)'],
     official_hub: ['#60a5fa', 'rgba(96,165,250,0.15)'],
     celebrity_hub: ['#f472b6', 'rgba(244,114,182,0.15)'],
+    placeholder_hub: ['#f87171', 'rgba(248,113,113,0.15)'],
   };
   const palette = styles[category] || ['#9ca3af', 'rgba(156,163,175,0.15)'];
   return `<span class="badge" style="color:${palette[0]};background:${palette[1]};">${accountCategoryLabel(category)}</span>`;

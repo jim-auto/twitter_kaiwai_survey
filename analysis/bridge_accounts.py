@@ -219,6 +219,7 @@ def _classify_attention_account(
     followers_count: int,
     source_community_count: int,
     cluster_count: int,
+    follow_edge_count: int,
 ) -> tuple[str, list[str]]:
     normalized = _normalize_account_text(
         screen_name=screen_name,
@@ -226,16 +227,27 @@ def _classify_attention_account(
         bio=bio,
     )
     reasons: list[str] = []
+    sparse_profile = not display_name.strip() and not bio.strip()
 
     if any(token in normalized for token in OFFICIAL_TOKENS):
         reasons.append("official_token")
     if any(token in normalized for token in MEDIA_TOKENS):
         reasons.append("media_token")
+    if sparse_profile:
+        reasons.append("sparse_profile")
 
     if "media_token" in reasons:
         return "media_hub", reasons
     if "official_token" in reasons:
         return "official_hub", reasons
+    if (
+        sparse_profile
+        and source_community_count >= 4
+        and cluster_count >= 2
+        and follow_edge_count >= 5
+    ):
+        reasons.append("placeholder_suppression")
+        return "placeholder_hub", reasons
     if followers_count >= 1_000_000 and source_community_count >= 4 and cluster_count >= 2:
         reasons.append("large_cross_cluster_following")
         return "celebrity_hub", reasons
@@ -424,6 +436,7 @@ def _materialize_attention_view(
             followers_count=followers_count,
             source_community_count=source_community_count,
             cluster_count=cluster_count,
+            follow_edge_count=follow_edge_count,
         )
         rows.append(AttentionBridgeAccount(
             user_id=user_id,
